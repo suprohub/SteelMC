@@ -36,9 +36,9 @@ impl Axis {
     #[must_use]
     pub const fn as_str(&self) -> &str {
         match self {
-            Axis::X => "x",
-            Axis::Y => "y",
-            Axis::Z => "z",
+            Self::X => "x",
+            Self::Y => "y",
+            Self::Z => "z",
         }
     }
 }
@@ -46,7 +46,7 @@ impl Axis {
 #[allow(missing_docs)]
 impl<T: Math + PartialOrd + Copy> Vector3<T> {
     pub const fn new(x: T, y: T, z: T) -> Self {
-        Vector3 { x, y, z }
+        Self { x, y, z }
     }
 
     #[must_use]
@@ -60,8 +60,8 @@ impl<T: Math + PartialOrd + Copy> Vector3<T> {
     }
 
     #[must_use]
-    pub fn add(&self, other: &Vector3<T>) -> Self {
-        Vector3 {
+    pub fn add(&self, other: &Self) -> Self {
+        Self {
             x: self.x + other.x,
             y: self.y + other.y,
             z: self.z + other.z,
@@ -70,7 +70,7 @@ impl<T: Math + PartialOrd + Copy> Vector3<T> {
 
     #[must_use]
     pub fn add_raw(&self, x: T, y: T, z: T) -> Self {
-        Vector3 {
+        Self {
             x: self.x + x,
             y: self.y + y,
             z: self.z + z,
@@ -78,8 +78,8 @@ impl<T: Math + PartialOrd + Copy> Vector3<T> {
     }
 
     #[must_use]
-    pub fn sub(&self, other: &Vector3<T>) -> Self {
-        Vector3 {
+    pub fn sub(&self, other: &Self) -> Self {
+        Self {
             x: self.x - other.x,
             y: self.y - other.y,
             z: self.z - other.z,
@@ -88,7 +88,7 @@ impl<T: Math + PartialOrd + Copy> Vector3<T> {
 
     #[must_use]
     pub fn sub_raw(&self, x: T, y: T, z: T) -> Self {
-        Vector3 {
+        Self {
             x: self.x - x,
             y: self.y - y,
             z: self.z - z,
@@ -105,8 +105,8 @@ impl<T: Math + PartialOrd + Copy> Vector3<T> {
     }
 
     #[must_use]
-    pub fn lerp(&self, other: &Vector3<T>, t: T) -> Self {
-        Vector3 {
+    pub fn lerp(&self, other: &Self, t: T) -> Self {
+        Self {
             x: self.x + (other.x - self.x) * t,
             y: self.y + (other.y - self.y) * t,
             z: self.z + (other.z - self.z) * t,
@@ -189,7 +189,7 @@ impl<T: Math + Copy + Float> Vector3<T> {
     #[must_use]
     pub fn normalize(&self) -> Self {
         let length = self.length();
-        Vector3 {
+        Self {
             x: self.x / length,
             y: self.y / length,
             z: self.z / length,
@@ -225,7 +225,7 @@ impl<T: Math + Copy> Mul<T> for Vector3<T> {
 
 #[allow(missing_docs)]
 impl<T: Math + Copy> Add for Vector3<T> {
-    type Output = Vector3<T>;
+    type Output = Self;
     fn add(self, rhs: Self) -> Self::Output {
         Self {
             x: self.x + rhs.x,
@@ -261,7 +261,7 @@ impl<T: Math + Copy> Neg for Vector3<T> {
 #[allow(missing_docs)]
 impl<T> From<(T, T, T)> for Vector3<T> {
     fn from((x, y, z): (T, T, T)) -> Self {
-        Vector3 { x, y, z }
+        Self { x, y, z }
     }
 }
 

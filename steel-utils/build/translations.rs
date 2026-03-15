@@ -13,7 +13,7 @@ fn escape_string(s: &str) -> String {
         .replace('\t', "\\t")
 }
 
-pub(crate) fn build() -> TokenStream {
+pub fn build() -> TokenStream {
     println!("cargo:rerun-if-changed=build_assets/en_us.json");
 
     let lang_file = fs::read_to_string("build_assets/en_us.json")

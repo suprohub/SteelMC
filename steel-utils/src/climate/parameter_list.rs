@@ -32,7 +32,7 @@ enum RTreeNode {
     /// Internal node with children and a bounding box.
     SubTree {
         parameter_space: [Parameter; PARAMETER_COUNT],
-        children: Vec<RTreeNode>,
+        children: Vec<Self>,
     },
 }
 
@@ -206,7 +206,7 @@ fn sort_bucket_subtrees(
 
 /// Compute the expected bucket size from vanilla's formula.
 fn expected_children_count(total: usize) -> usize {
-    let log_base_6 = ((total as f64) - 0.01).ln() / (CHILDREN_PER_NODE as f64).ln();
+    let log_base_6 = ((total as f64) - 0.01).log(CHILDREN_PER_NODE as f64);
     (CHILDREN_PER_NODE as f64).powf(log_base_6.floor()) as usize
 }
 

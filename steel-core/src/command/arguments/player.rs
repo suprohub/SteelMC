@@ -23,12 +23,12 @@ impl PlayerArgument {
     /// Creates a selector for multiple players
     #[must_use]
     pub const fn multiple() -> Self {
-        PlayerArgument { one: false }
+        Self { one: false }
     }
     /// Creates a selector for one player
     #[must_use]
     pub const fn one() -> Self {
-        PlayerArgument { one: true }
+        Self { one: true }
     }
 }
 

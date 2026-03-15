@@ -272,7 +272,7 @@ impl PersistentPlayerData {
         let prev_game_mode = nbt.int("previousPlayerGameType").unwrap_or(0);
         let selected_slot = nbt.int("SelectedItemSlot").unwrap_or(0);
         let dimension = nbt.string("Dimension").map_or_else(
-            || "minecraft:overworld".to_string(),
+            || "minecraft:overworld".to_owned(),
             |s| s.to_str().to_string(),
         );
         let data_version = nbt.int("DataVersion").unwrap_or(0);

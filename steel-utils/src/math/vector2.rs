@@ -18,7 +18,7 @@ pub struct Vector2<T> {
 impl<T: Math + Copy> Vector2<T> {
     #[inline]
     pub const fn new(x: T, y: T) -> Self {
-        Vector2 { x, y }
+        Self { x, y }
     }
 
     #[must_use]
@@ -27,8 +27,8 @@ impl<T: Math + Copy> Vector2<T> {
     }
 
     #[must_use]
-    pub fn add(&self, other: &Vector2<T>) -> Self {
-        Vector2 {
+    pub fn add(&self, other: &Self) -> Self {
+        Self {
             x: self.x + other.x,
             y: self.y + other.y,
         }
@@ -36,15 +36,15 @@ impl<T: Math + Copy> Vector2<T> {
 
     #[must_use]
     pub fn add_raw(&self, x: T, y: T) -> Self {
-        Vector2 {
+        Self {
             x: self.x + x,
             y: self.y + y,
         }
     }
 
     #[must_use]
-    pub fn sub(&self, other: &Vector2<T>) -> Self {
-        Vector2 {
+    pub fn sub(&self, other: &Self) -> Self {
+        Self {
             x: self.x - other.x,
             y: self.y - other.y,
         }

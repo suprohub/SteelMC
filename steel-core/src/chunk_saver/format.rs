@@ -37,6 +37,7 @@ use crate::chunk::chunk_access::ChunkStatus;
 pub const REGION_MAGIC: [u8; 4] = *b"STLR";
 
 /// Current format version. Increment when making breaking changes.
+///
 /// v3: Added entity persistence (`PersistentEntity`).
 /// v4: Added scheduled tick persistence (`PersistentTick`).
 /// v5: Added heightmap persistence (`PersistentHeightmap`).

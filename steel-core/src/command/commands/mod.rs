@@ -112,8 +112,8 @@ impl CommandHandlerBuilder {
         names: &'static [&'static str],
         description: &'static str,
         permission: &'static str,
-    ) -> CommandHandlerBuilder {
-        CommandHandlerBuilder {
+    ) -> Self {
+        Self {
             names,
             description,
             permission,

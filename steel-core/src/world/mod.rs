@@ -91,7 +91,7 @@ pub use tick_scheduler::ScheduledTick;
 /// Mirrors vanilla's `RandomSource.triangle(mode, deviation)`.
 /// Produces values centered around `mode` with a spread of `deviation`.
 fn triangle_random(mode: f64, deviation: f64) -> f64 {
-    mode + deviation * (rand::random::<f64>() - rand::random::<f64>())
+    deviation.mul_add(rand::random::<f64>() - rand::random::<f64>(), mode)
 }
 
 /// Timing information for a world tick.
@@ -199,7 +199,7 @@ impl World {
             }
         }
 
-        Ok(Arc::new_cyclic(|weak_self: &Weak<World>| Self {
+        Ok(Arc::new_cyclic(|weak_self: &Weak<Self>| Self {
             chunk_map: Arc::new(ChunkMap::new_with_storage(
                 chunk_runtime,
                 weak_self.clone(),
@@ -611,7 +611,8 @@ impl World {
         let chunk_pos = Self::chunk_pos_for_block(pos);
         self.chunk_map
             .with_full_chunk(&chunk_pos, |chunk| {
-                chunk.as_full().and_then(|lc| lc.get_block_entity(*pos))
+                let lc = chunk.as_full()?;
+                lc.get_block_entity(*pos)
             })
             .flatten()
     }
@@ -1260,9 +1261,9 @@ impl World {
             }
 
             // Random position within the block (vanilla logic)
-            let x = f64::from(pos.x()).floor() + rand::random::<f64>() * center_range + half_size;
-            let y = f64::from(pos.y()).floor() + rand::random::<f64>() * center_range;
-            let z = f64::from(pos.z()).floor() + rand::random::<f64>() * center_range + half_size;
+            let x = rand::random::<f64>().mul_add(center_range, f64::from(pos.x()).floor()) + half_size;
+            let y = rand::random::<f64>().mul_add(center_range, f64::from(pos.y()).floor());
+            let z = rand::random::<f64>().mul_add(center_range, f64::from(pos.z()).floor()) + half_size;
 
             // triangle(mode, deviation) produces values centered around mode with spread of deviation
             let vx = triangle_random(0.0, VELOCITY_SPREAD);
@@ -1866,9 +1867,9 @@ impl World {
         item: ItemStack,
     ) -> Option<Arc<ItemEntity>> {
         // Default ItemEntity velocity: random horizontal scatter + upward pop
-        let vx = rand::random::<f64>() * 0.2 - 0.1;
+        let vx = rand::random::<f64>().mul_add(0.2, -0.1);
         let vy = 0.2;
-        let vz = rand::random::<f64>() * 0.2 - 0.1;
+        let vz = rand::random::<f64>().mul_add(0.2, -0.1);
         self.spawn_item_with_velocity(pos, item, Vector3::new(vx, vy, vz))
     }
 
@@ -1926,9 +1927,9 @@ impl World {
         let half_height = f64::from(vanilla_entities::ITEM.dimensions.height) / 2.0;
 
         // Random offset within block (vanilla: nextDouble(-0.25, 0.25))
-        let x = f64::from(pos.x()) + 0.5 + (rand::random::<f64>() - 0.5) * 0.5;
-        let y = f64::from(pos.y()) + 0.5 + (rand::random::<f64>() - 0.5) * 0.5 - half_height;
-        let z = f64::from(pos.z()) + 0.5 + (rand::random::<f64>() - 0.5) * 0.5;
+        let x = (rand::random::<f64>() - 0.5).mul_add(0.5, f64::from(pos.x()) + 0.5);
+        let y = (rand::random::<f64>() - 0.5).mul_add(0.5, f64::from(pos.y()) + 0.5) - half_height;
+        let z = (rand::random::<f64>() - 0.5).mul_add(0.5, f64::from(pos.z()) + 0.5);
 
         self.spawn_item(Vector3::new(x, y, z), item)
     }
@@ -1987,7 +1988,7 @@ impl World {
         let delta_y = if step_y == 0 {
             rand::random::<f64>() * 0.1
         } else {
-            f64::from(step_y) * 0.1 + 0.1
+            f64::from(step_y).mul_add(0.1, 0.1)
         };
         let delta_z = if step_z == 0 {
             (rand::random::<f64>() - 0.5) * 0.2
@@ -2034,7 +2035,8 @@ impl World {
         let entity = self
             .chunk_map
             .with_full_chunk(&from, |chunk| {
-                chunk.as_full().and_then(|c| c.entities.remove(entity_id))
+                let c = chunk.as_full()?;
+                c.entities.remove(entity_id)
             })
             .flatten();
 
@@ -2061,7 +2063,8 @@ impl World {
         let entity: Option<SharedEntity> = self
             .chunk_map
             .with_full_chunk(&chunk_pos, |chunk| {
-                chunk.as_full().and_then(|c| c.entities.remove(entity_id))
+                let c = chunk.as_full()?;
+                c.entities.remove(entity_id)
             })
             .flatten();
 

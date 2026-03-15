@@ -39,7 +39,7 @@ pub fn get_fluid_state_from_block(state: BlockStateId) -> FluidState {
         FluidState::from_block_level(lava_id(), level)
     } else {
         // Check waterlogged property
-        if let Some(true) = state.try_get_value(&BlockStateProperties::WATERLOGGED) {
+        if state.try_get_value(&BlockStateProperties::WATERLOGGED) == Some(true) {
             FluidState::source(water_id())
         } else {
             FluidState::EMPTY
@@ -141,6 +141,7 @@ pub fn get_own_height(fluid_state: FluidState) -> f32 {
 }
 
 /// Returns the effective fluid height at a position, accounting for fluid above.
+///
 /// If the same fluid type occupies the block directly above (`hasSameAbove`),
 /// the height is `1.0` (full block). Otherwise it is `get_own_height(fluid_state)`.
 #[must_use]

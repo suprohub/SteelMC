@@ -424,7 +424,7 @@ impl DensityFunction {
     #[must_use]
     pub fn resolve(
         &self,
-        registry: &FxHashMap<String, Arc<DensityFunction>>,
+        registry: &FxHashMap<String, Arc<Self>>,
         noises: &FxHashMap<String, NormalNoise>,
     ) -> Self {
         self.resolve_inner(registry, noises)
@@ -432,7 +432,7 @@ impl DensityFunction {
 
     fn resolve_inner(
         &self,
-        registry: &FxHashMap<String, Arc<DensityFunction>>,
+        registry: &FxHashMap<String, Arc<Self>>,
         noises: &FxHashMap<String, NormalNoise>,
     ) -> Self {
         match self {

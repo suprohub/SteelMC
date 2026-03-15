@@ -30,7 +30,7 @@ impl InteractionResult {
     /// Pass and `TryEmptyHandInteraction` do not consume the action.
     #[must_use]
     pub const fn consumes_action(&self) -> bool {
-        matches!(self, InteractionResult::Success | InteractionResult::Fail)
+        matches!(self, Self::Success | Self::Fail)
     }
 }
 

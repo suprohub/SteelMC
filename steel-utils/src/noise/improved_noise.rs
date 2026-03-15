@@ -274,9 +274,9 @@ impl ImprovedNoise {
         let z_sd = smoothstep_derivative(zr);
 
         // Accumulate derivatives (vanilla uses +=)
-        derivative_out[0] += d1x + x_sd * d2x;
-        derivative_out[1] += d1y + y_sd * d2y;
-        derivative_out[2] += d1z + z_sd * d2z;
+        derivative_out[0] += x_sd.mul_add(d2x, d1x);
+        derivative_out[1] += y_sd.mul_add(d2y, d1y);
+        derivative_out[2] += z_sd.mul_add(d2z, d1z);
 
         lerp3(
             x_alpha, y_alpha, z_alpha, d000, d100, d010, d110, d001, d101, d011, d111,
@@ -288,7 +288,7 @@ impl ImprovedNoise {
 #[inline]
 fn grad_dot(hash: usize, x: f64, y: f64, z: f64) -> f64 {
     let g = &GRADIENT[hash & 15];
-    g[0] * x + g[1] * y + g[2] * z
+    g[2].mul_add(z, g[1].mul_add(y, g[0] * x))
 }
 
 #[cfg(test)]

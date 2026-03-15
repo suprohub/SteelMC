@@ -78,7 +78,7 @@ impl FluidBehavior for WaterFluid {
         if !fluid_state.is_source() && !fluid_state.falling {
             // 1/64 chance for flowing water ambient sound
             if rand::random_range(0u32..64) == 0 {
-                let volume: f32 = rand::random::<f32>() * 0.25 + 0.75;
+                let volume: f32 = rand::random::<f32>().mul_add(0.25, 0.75);
                 let pitch: f32 = rand::random::<f32>() + 0.5;
                 world.play_block_sound(sound_events::BLOCK_WATER_AMBIENT, pos, volume, pitch, None);
             }

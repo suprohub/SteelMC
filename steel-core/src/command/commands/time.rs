@@ -47,9 +47,9 @@ impl CommandExecutor<()> for TimeQueryExecutor {
         let number = {
             let lock = context.world.level_data.read();
             match self {
-                TimeQueryExecutor::Day => lock.day(),
-                TimeQueryExecutor::Daytime => lock.day_time(),
-                TimeQueryExecutor::Gametime => lock.game_time(),
+                Self::Day => lock.day(),
+                Self::Daytime => lock.day_time(),
+                Self::Gametime => lock.game_time(),
             }
         };
         context.sender.send_message(
@@ -76,8 +76,8 @@ impl CommandExecutor<((), i32)> for TimeExecutor {
 
                 let game_time = lock.game_time();
                 let new_day_time = match self {
-                    TimeExecutor::Add => (lock.day_time() + i64::from(args.1)) % 24000,
-                    TimeExecutor::Set => i64::from(args.1) % 24000,
+                    Self::Add => (lock.day_time() + i64::from(args.1)) % 24000,
+                    Self::Set => i64::from(args.1) % 24000,
                 };
 
                 lock.set_day_time(new_day_time);

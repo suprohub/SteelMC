@@ -426,7 +426,7 @@ impl ItemEntity {
     ///
     /// Mirrors vanilla's `ItemEntity.tryToMerge()`.
     /// The item with fewer items is merged into the one with more.
-    fn try_to_merge(&self, other: &ItemEntity) {
+    fn try_to_merge(&self, other: &Self) {
         let this_stack = self.get_item();
         let other_stack = other.get_item();
 
@@ -451,9 +451,9 @@ impl ItemEntity {
     ///
     /// Mirrors vanilla's `ItemEntity.merge(ItemEntity, ItemStack, ItemEntity, ItemStack)`.
     fn merge_stacks(
-        to_item: &ItemEntity,
+        to_item: &Self,
         to_stack: &ItemStack,
-        from_item: &ItemEntity,
+        from_item: &Self,
         from_stack: &ItemStack,
     ) {
         // Calculate how many items to transfer
@@ -539,9 +539,7 @@ impl ItemEntity {
         let current = self.velocity();
         let last_sent = *self.last_sent_velocity.lock();
 
-        let diff_sq = (current.x - last_sent.x).powi(2)
-            + (current.y - last_sent.y).powi(2)
-            + (current.z - last_sent.z).powi(2);
+        let diff_sq = (current.z - last_sent.z).mul_add(current.z - last_sent.z, (current.y - last_sent.y).mul_add(current.y - last_sent.y, (current.x - last_sent.x).powi(2)));
 
         // Sync if velocity changed significantly, or if it went to zero
         // (vanilla: ServerEntity.sendChanges lines 170-172)
@@ -576,9 +574,7 @@ impl ItemEntity {
 
         // Check if position changed enough to warrant sync
         // Vanilla threshold: 7.6293945E-6 (TOLERANCE_LEVEL_POSITION)
-        let diff_sq = (current_pos.x - last_sent.x).powi(2)
-            + (current_pos.y - last_sent.y).powi(2)
-            + (current_pos.z - last_sent.z).powi(2);
+        let diff_sq = (current_pos.z - last_sent.z).mul_add(current_pos.z - last_sent.z, (current_pos.y - last_sent.y).mul_add(current_pos.y - last_sent.y, (current_pos.x - last_sent.x).powi(2)));
 
         let position_changed = diff_sq >= 7.629_394_5e-6;
         let on_ground_changed = current_on_ground != last_on_ground;
@@ -766,7 +762,7 @@ impl Entity for ItemEntity {
         // 3. Every 4th tick (for items that might need to fall through opened trapdoors, etc.)
         // (vanilla: ItemEntity.tick line 121)
         let vel = self.velocity();
-        let horizontal_movement_sq = vel.x * vel.x + vel.z * vel.z;
+        let horizontal_movement_sq = vel.z.mul_add(vel.z, vel.x * vel.x);
         let should_move = !self.on_ground()
             || horizontal_movement_sq > 1.0e-5
             || (tick_count + self.id()) % 4 == 0;
@@ -835,7 +831,7 @@ impl Entity for ItemEntity {
             new_movement.y - old_movement.y,
             new_movement.z - old_movement.z,
         );
-        let diff_sq = diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
+        let diff_sq = diff.z.mul_add(diff.z, diff.y.mul_add(diff.y, diff.x * diff.x));
         if diff_sq > 0.01 {
             self.needs_sync.store(true, Ordering::Relaxed);
         }

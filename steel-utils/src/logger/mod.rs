@@ -27,16 +27,16 @@ impl Display for Level {
             f,
             "{}",
             match self {
-                Level::Tracing(level) => match *level {
-                    tracing::Level::ERROR => "\x1b[0;1;31m[Error]\x1b[0m".to_string(),
-                    tracing::Level::WARN => "\x1b[0;1;33m[Warn]\x1b[0m".to_string(),
-                    tracing::Level::INFO => "\x1b[0;1;34m[Info]\x1b[0m".to_string(),
-                    tracing::Level::DEBUG => "\x1b[0;1;32m[Debug]\x1b[0m".to_string(),
-                    tracing::Level::TRACE => "\x1b[0;1;90m[Trace]\x1b[0m".to_string(),
+                Self::Tracing(level) => match *level {
+                    tracing::Level::ERROR => "\x1b[0;1;31m[Error]\x1b[0m".to_owned(),
+                    tracing::Level::WARN => "\x1b[0;1;33m[Warn]\x1b[0m".to_owned(),
+                    tracing::Level::INFO => "\x1b[0;1;34m[Info]\x1b[0m".to_owned(),
+                    tracing::Level::DEBUG => "\x1b[0;1;32m[Debug]\x1b[0m".to_owned(),
+                    tracing::Level::TRACE => "\x1b[0;1;90m[Trace]\x1b[0m".to_owned(),
                 },
-                Level::Console => "\x1b[0;1;35m[Console]\x1b[0m".to_string(),
-                Level::Chat(name) => format!("\x1b[0;36m[Chat: {name}]\x1b[0m"),
-                Level::Command(name) => format!("\x1b[0;35m[Command: {name}]\x1b[0m"),
+                Self::Console => "\x1b[0;1;35m[Console]\x1b[0m".to_owned(),
+                Self::Chat(name) => format!("\x1b[0;36m[Chat: {name}]\x1b[0m"),
+                Self::Command(name) => format!("\x1b[0;35m[Command: {name}]\x1b[0m"),
             }
         )
     }
@@ -97,7 +97,7 @@ impl LogData {
     pub fn message(msg: String) -> Self {
         Self {
             message: msg,
-            module_path: module_path!().to_string(),
+            module_path: module_path!().to_owned(),
             extra: String::new(),
         }
     }

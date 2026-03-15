@@ -713,10 +713,10 @@ impl SlotType {
     #[must_use]
     pub fn all_container_refs(&self) -> Vec<ContainerRef> {
         match self {
-            SlotType::Normal(s) => vec![s.container_ref()],
-            SlotType::Armor(s) => vec![s.container_ref()],
-            SlotType::CraftingGrid(s) => vec![s.container_ref(), s.result_container_ref()],
-            SlotType::CraftingResult(s) => {
+            Self::Normal(s) => vec![s.container_ref()],
+            Self::Armor(s) => vec![s.container_ref()],
+            Self::CraftingGrid(s) => vec![s.container_ref(), s.result_container_ref()],
+            Self::CraftingResult(s) => {
                 vec![s.result_container_ref(), s.crafting_container_ref()]
             }
         }
@@ -730,8 +730,8 @@ impl SlotType {
     #[must_use]
     pub fn container_key(&self) -> Option<(ContainerId, usize)> {
         match self {
-            SlotType::Normal(s) => Some((s.container_ref().container_id(), s.get_container_slot())),
-            SlotType::Armor(s) => Some((s.container_ref().container_id(), s.get_container_slot())),
+            Self::Normal(s) => Some((s.container_ref().container_id(), s.get_container_slot())),
+            Self::Armor(s) => Some((s.container_ref().container_id(), s.get_container_slot())),
             _ => None,
         }
     }

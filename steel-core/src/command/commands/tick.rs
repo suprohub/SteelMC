@@ -113,17 +113,17 @@ impl CommandExecutor<()> for TickQueryExecutor {
         let p50 = if sample_count > 0 {
             nanos_to_ms_string(samples[sample_count / 2])
         } else {
-            "0.0".to_string()
+            "0.0".to_owned()
         };
         let p95 = if sample_count > 0 {
             nanos_to_ms_string(samples[(sample_count as f64 * 0.95) as usize])
         } else {
-            "0.0".to_string()
+            "0.0".to_owned()
         };
         let p99 = if sample_count > 0 {
             nanos_to_ms_string(samples[(sample_count as f64 * 0.99) as usize])
         } else {
-            "0.0".to_string()
+            "0.0".to_owned()
         };
 
         context.sender.send_message(

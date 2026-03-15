@@ -39,7 +39,7 @@ impl UuidExt for Uuid {
         let b1 = arr[1].to_be_bytes();
         let b2 = arr[2].to_be_bytes();
         let b3 = arr[3].to_be_bytes();
-        Some(Uuid::from_bytes([
+        Some(Self::from_bytes([
             b0[0], b0[1], b0[2], b0[3], b1[0], b1[1], b1[2], b1[3], b2[0], b2[1], b2[2], b2[3],
             b3[0], b3[1], b3[2], b3[3],
         ]))

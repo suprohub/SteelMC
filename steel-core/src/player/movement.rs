@@ -271,7 +271,7 @@ pub fn validate_movement(world: &World, input: &MovementInput) -> MovementValida
     let dx = target_pos.x - first_good.x;
     let dy = target_pos.y - first_good.y;
     let dz = target_pos.z - first_good.z;
-    let moved_dist_sq = dx * dx + dy * dy + dz * dz;
+    let moved_dist_sq = dz.mul_add(dz, dy.mul_add(dy, dx * dx));
 
     // Speed check
     if !input.skip_checks {
@@ -324,7 +324,7 @@ pub fn validate_movement(world: &World, input: &MovementInput) -> MovementValida
         error_y = 0.0;
     }
 
-    let error_dist_sq = error_x * error_x + error_y * error_y + error_z * error_z;
+    let error_dist_sq = error_z.mul_add(error_z, error_y.mul_add(error_y, error_x * error_x));
 
     // Movement error check
     let error_check_failed = !input.in_impulse_grace && error_dist_sq > MOVEMENT_ERROR_THRESHOLD;

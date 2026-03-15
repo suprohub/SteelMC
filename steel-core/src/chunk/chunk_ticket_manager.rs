@@ -124,7 +124,8 @@ impl ChunkTicketManager {
     /// Returns the minimum ticket level at position.
     #[must_use]
     pub fn get_ticket(&self, pos: ChunkPos) -> Option<u8> {
-        self.tickets.get(&pos).and_then(|l| l.iter().min().copied())
+        let l = self.tickets.get(&pos)?;
+        l.iter().min().copied()
     }
 
     #[must_use]

@@ -8,7 +8,7 @@ use crate::{codec::VarInt, math::Axis, serial::ReadFrom, types::BlockPos};
 
 /// The six cardinal directions in Minecraft.
 #[derive(Clone, Copy, Debug)]
-#[derive_const(PartialEq)]
+#[derive_const(PartialEq, Eq)]
 pub enum Direction {
     /// Negative Y direction.
     Down,
@@ -28,12 +28,12 @@ impl ReadFrom for Direction {
     fn read(data: &mut Cursor<&[u8]>) -> io::Result<Self> {
         let id = VarInt::read(data)?.0;
         match id {
-            0 => Ok(Direction::Down),
-            1 => Ok(Direction::Up),
-            2 => Ok(Direction::North),
-            3 => Ok(Direction::South),
-            4 => Ok(Direction::West),
-            5 => Ok(Direction::East),
+            0 => Ok(Self::Down),
+            1 => Ok(Self::Up),
+            2 => Ok(Self::North),
+            3 => Ok(Self::South),
+            4 => Ok(Self::West),
+            5 => Ok(Self::East),
             _ => Err(io::Error::other("Invalid Direction id")),
         }
     }
@@ -44,12 +44,12 @@ impl Direction {
     #[must_use]
     pub const fn offset(&self) -> (i32, i32, i32) {
         match self {
-            Direction::Down => (0, -1, 0),
-            Direction::Up => (0, 1, 0),
-            Direction::North => (0, 0, -1),
-            Direction::South => (0, 0, 1),
-            Direction::West => (-1, 0, 0),
-            Direction::East => (1, 0, 0),
+            Self::Down => (0, -1, 0),
+            Self::Up => (0, 1, 0),
+            Self::North => (0, 0, -1),
+            Self::South => (0, 0, 1),
+            Self::West => (-1, 0, 0),
+            Self::East => (1, 0, 0),
         }
     }
 
@@ -64,22 +64,22 @@ impl Direction {
     #[must_use]
     pub const fn get_axis(&self) -> Axis {
         match self {
-            Direction::Down | Direction::Up => Axis::Y,
-            Direction::North | Direction::South => Axis::Z,
-            Direction::West | Direction::East => Axis::X,
+            Self::Down | Self::Up => Axis::Y,
+            Self::North | Self::South => Axis::Z,
+            Self::West | Self::East => Axis::X,
         }
     }
 
     /// Returns the opposite direction.
     #[must_use]
-    pub const fn opposite(&self) -> Direction {
+    pub const fn opposite(&self) -> Self {
         match self {
-            Direction::Down => Direction::Up,
-            Direction::Up => Direction::Down,
-            Direction::North => Direction::South,
-            Direction::South => Direction::North,
-            Direction::West => Direction::East,
-            Direction::East => Direction::West,
+            Self::Down => Self::Up,
+            Self::Up => Self::Down,
+            Self::North => Self::South,
+            Self::South => Self::North,
+            Self::West => Self::East,
+            Self::East => Self::West,
         }
     }
 
@@ -91,13 +91,13 @@ impl Direction {
     /// - 180° = North (-Z)
     /// - 270° = East (+X)
     #[must_use]
-    pub fn from_yaw(yaw: f32) -> Direction {
+    pub fn from_yaw(yaw: f32) -> Self {
         let adjusted = yaw.rem_euclid(360.0);
         match adjusted {
-            y if !(45.0..315.0).contains(&y) => Direction::South,
-            y if y < 135.0 => Direction::West,
-            y if y < 225.0 => Direction::North,
-            _ => Direction::East,
+            y if !(45.0..315.0).contains(&y) => Self::South,
+            y if y < 135.0 => Self::West,
+            y if y < 225.0 => Self::North,
+            _ => Self::East,
         }
     }
 
@@ -108,10 +108,10 @@ impl Direction {
     #[must_use]
     pub const fn to_yaw(&self) -> f32 {
         match self {
-            Direction::North => 180.0,
-            Direction::South | Direction::Up | Direction::Down => 0.0,
-            Direction::West => 90.0,
-            Direction::East => 270.0,
+            Self::North => 180.0,
+            Self::South | Self::Up | Self::Down => 0.0,
+            Self::West => 90.0,
+            Self::East => 270.0,
         }
     }
 
@@ -126,7 +126,7 @@ impl Direction {
     pub const fn is_horizontal(&self) -> bool {
         matches!(
             self,
-            Direction::North | Direction::South | Direction::East | Direction::West
+            Self::North | Self::South | Self::East | Self::West
         )
     }
 
@@ -134,12 +134,12 @@ impl Direction {
     ///
     /// Vertical directions are unchanged.
     #[must_use]
-    pub const fn rotate_y_clockwise(&self) -> Direction {
+    pub const fn rotate_y_clockwise(&self) -> Self {
         match self {
-            Direction::North => Direction::East,
-            Direction::East => Direction::South,
-            Direction::South => Direction::West,
-            Direction::West => Direction::North,
+            Self::North => Self::East,
+            Self::East => Self::South,
+            Self::South => Self::West,
+            Self::West => Self::North,
             other => *other,
         }
     }
@@ -148,53 +148,53 @@ impl Direction {
     ///
     /// Vertical directions are unchanged.
     #[must_use]
-    pub const fn rotate_y_counter_clockwise(&self) -> Direction {
+    pub const fn rotate_y_counter_clockwise(&self) -> Self {
         match self {
-            Direction::North => Direction::West,
-            Direction::West => Direction::South,
-            Direction::South => Direction::East,
-            Direction::East => Direction::North,
+            Self::North => Self::West,
+            Self::West => Self::South,
+            Self::South => Self::East,
+            Self::East => Self::North,
             other => *other,
         }
     }
 
     /// The order in which neighbor shape updates are processed.
     /// This matches vanilla's `BlockBehaviour.UPDATE_SHAPE_ORDER`.
-    pub const UPDATE_SHAPE_ORDER: [Direction; 6] = [
-        Direction::West,
-        Direction::East,
-        Direction::North,
-        Direction::South,
-        Direction::Down,
-        Direction::Up,
+    pub const UPDATE_SHAPE_ORDER: [Self; 6] = [
+        Self::West,
+        Self::East,
+        Self::North,
+        Self::South,
+        Self::Down,
+        Self::Up,
     ];
 
     /// Vanilla: `LiquidBlock.POSSIBLE_FLOW_DIRECTIONS` mapped through `getOpposite()`.
     /// Used by `LiquidBlock.shouldSpreadLiquid()` to check neighbors for lava-water interactions.
-    pub const FLOW_NEIGHBOR_CHECK: [Direction; 5] = [
-        Direction::Up,
-        Direction::North,
-        Direction::South,
-        Direction::West,
-        Direction::East,
+    pub const FLOW_NEIGHBOR_CHECK: [Self; 5] = [
+        Self::Up,
+        Self::North,
+        Self::South,
+        Self::West,
+        Self::East,
     ];
 
     /// The 4 horizontal directions.
-    pub const HORIZONTAL: [Direction; 4] = [
-        Direction::North,
-        Direction::South,
-        Direction::West,
-        Direction::East,
+    pub const HORIZONTAL: [Self; 4] = [
+        Self::North,
+        Self::South,
+        Self::West,
+        Self::East,
     ];
 
     /// The 6 directions.
-    pub const ALL: [Direction; 6] = [
-        Direction::North,
-        Direction::South,
-        Direction::West,
-        Direction::East,
-        Direction::Down,
-        Direction::Up,
+    pub const ALL: [Self; 6] = [
+        Self::North,
+        Self::South,
+        Self::West,
+        Self::East,
+        Self::Down,
+        Self::Up,
     ];
 
     /// Returns all directions ordered by how closely they match the player's look direction.
@@ -203,7 +203,7 @@ impl Direction {
     /// - `yaw`: Player's yaw rotation in degrees (0 = South, 90 = West, 180 = North, 270 = East)
     /// - `pitch`: Player's pitch rotation in degrees (negative = looking up, positive = looking down)
     #[must_use]
-    pub fn ordered_by_nearest(yaw: f32, pitch: f32) -> [Direction; 6] {
+    pub fn ordered_by_nearest(yaw: f32, pitch: f32) -> [Self; 6] {
         // Convert to radians and negate yaw to match vanilla's coordinate system
         let pitch_rad = pitch.to_radians();
         let yaw_rad = (-yaw).to_radians();
@@ -227,19 +227,19 @@ impl Direction {
 
         // Determine the primary direction on each axis
         let axis_x = if x_pos {
-            Direction::East
+            Self::East
         } else {
-            Direction::West
+            Self::West
         };
         let axis_y = if y_pos {
-            Direction::Up
+            Self::Up
         } else {
-            Direction::Down
+            Self::Down
         };
         let axis_z = if z_pos {
-            Direction::South
+            Self::South
         } else {
-            Direction::North
+            Self::North
         };
 
         // Sort axes by magnitude and build the direction array
@@ -265,10 +265,10 @@ impl Direction {
     /// The order is: 3 primary directions by magnitude, then their opposites in reverse order.
     /// This matches vanilla's `Direction.makeDirectionArray()`.
     const fn make_direction_array(
-        axis1: Direction,
-        axis2: Direction,
-        axis3: Direction,
-    ) -> [Direction; 6] {
+        axis1: Self,
+        axis2: Self,
+        axis3: Self,
+    ) -> [Self; 6] {
         [
             axis1,
             axis2,
@@ -283,12 +283,12 @@ impl Direction {
     #[must_use]
     pub const fn as_str(&self) -> &str {
         match self {
-            Direction::Down => "down",
-            Direction::Up => "up",
-            Direction::North => "north",
-            Direction::South => "south",
-            Direction::West => "west",
-            Direction::East => "east",
+            Self::Down => "down",
+            Self::Up => "up",
+            Self::North => "north",
+            Self::South => "south",
+            Self::West => "west",
+            Self::East => "east",
         }
     }
 }

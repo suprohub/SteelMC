@@ -28,7 +28,7 @@ impl CommandDispatcher {
     /// Creates a new command dispatcher with vanilla handlers.
     #[must_use]
     pub fn new() -> Self {
-        let dispatcher = CommandDispatcher::new_empty();
+        let dispatcher = Self::new_empty();
         dispatcher.register(commands::clear::command_handler());
         dispatcher.register(commands::execute::command_handler());
         dispatcher.register(commands::fly::command_handler());
@@ -50,7 +50,7 @@ impl CommandDispatcher {
     /// Creates a new command dispatcher with no handlers.
     #[must_use]
     pub fn new_empty() -> Self {
-        CommandDispatcher {
+        Self {
             handlers: scc::HashMap::new(),
         }
     }

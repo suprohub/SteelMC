@@ -35,18 +35,18 @@ pub enum HeightmapType {
 impl HeightmapType {
     /// Returns worldgen heightmap types (used before CARVERS status).
     #[must_use]
-    pub const fn worldgen_types() -> &'static [HeightmapType] {
-        &[HeightmapType::WorldSurfaceWg, HeightmapType::OceanFloorWg]
+    pub const fn worldgen_types() -> &'static [Self] {
+        &[Self::WorldSurfaceWg, Self::OceanFloorWg]
     }
 
     /// Returns final heightmap types (used at CARVERS status and after).
     #[must_use]
-    pub const fn final_types() -> &'static [HeightmapType] {
+    pub const fn final_types() -> &'static [Self] {
         &[
-            HeightmapType::WorldSurface,
-            HeightmapType::MotionBlocking,
-            HeightmapType::MotionBlockingNoLeaves,
-            HeightmapType::OceanFloor,
+            Self::WorldSurface,
+            Self::MotionBlocking,
+            Self::MotionBlockingNoLeaves,
+            Self::OceanFloor,
         ]
     }
 

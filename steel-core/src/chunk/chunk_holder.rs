@@ -49,7 +49,7 @@ struct ChunkGuard(SyncRwLock<ChunkAccess>);
 
 impl ChunkGuard {
     pub const fn new(chunk_access: ChunkAccess) -> Self {
-        ChunkGuard(SyncRwLock::new(chunk_access))
+        Self(SyncRwLock::new(chunk_access))
     }
 
     pub fn read(&self) -> RwLockReadGuard<'_, ChunkAccess> {
@@ -308,7 +308,7 @@ impl ChunkHolder {
         self: &Arc<Self>,
         step: &'static ChunkStep,
         chunk_map: &Arc<ChunkMap>,
-        cache: &Arc<StaticCache2D<Arc<ChunkHolder>>>,
+        cache: &Arc<StaticCache2D<Arc<Self>>>,
         thread_pool: Arc<rayon::ThreadPool>,
     ) -> Option<NeighborReady> {
         let target_status = step.target_status;

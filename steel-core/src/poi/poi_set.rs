@@ -36,7 +36,7 @@ impl PointOfInterestSet {
     #[inline]
     #[must_use]
     pub const fn pack_local_pos(x: u8, y: u8, z: u8) -> u16 {
-        (y as u16) << 8 | (z as u16) << 4 | (x as u16)
+        ((y as u16) << 8) | ((z as u16) << 4) | (x as u16)
     }
 
     /// Unpacks a `u16` key back into `(x, y, z)` local coordinates.

@@ -100,7 +100,7 @@ pub async fn mojang_authenticate(
 #[must_use]
 pub fn signed_bytes_be_to_hex(bytes: &[u8]) -> String {
     if bytes.is_empty() {
-        return "0".to_string();
+        return "0".to_owned();
     }
 
     // Sign is determined by the MSB of the first byte in the full array,
@@ -126,9 +126,9 @@ pub fn signed_bytes_be_to_hex(bytes: &[u8]) -> String {
         let hex = hex::encode(bytes);
         let trimmed = hex.trim_start_matches('0');
         if trimmed.is_empty() {
-            "0".to_string()
+            "0".to_owned()
         } else {
-            trimmed.to_string()
+            trimmed.to_owned()
         }
     }
 }

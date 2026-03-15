@@ -110,7 +110,7 @@ impl PerlinSimplexNoise {
 
         for noise in &self.noise_levels {
             if let Some(n) = noise {
-                sum += n.get_value_2d(x * factor, z * factor) * amplitude;
+                sum = n.get_value_2d(x * factor, z * factor).mul_add(amplitude, sum);
             }
             factor /= 2.0;
             amplitude *= 2.0;

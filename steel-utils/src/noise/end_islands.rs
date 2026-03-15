@@ -77,7 +77,7 @@ impl EndIslands {
             .wrapping_mul(section_x)
             .wrapping_add(section_z.wrapping_mul(section_z));
         let dist = (dist_sq as f32).sqrt();
-        let mut doffs = (100.0_f32 - dist * 8.0).clamp(-100.0, 80.0);
+        let mut doffs = dist.mul_add(-8.0, 100.0_f32).clamp(-100.0, 80.0);
 
         // Check 25×25 neighborhood for island contributions
         for xo in -12..=12 {
@@ -89,14 +89,13 @@ impl EndIslands {
                     && island_noise.get_value_2d(total_chunk_x as f64, total_chunk_z as f64)
                         < ISLAND_THRESHOLD
                 {
-                    let island_size = ((total_chunk_x as f32).abs() * 3439.0
-                        + (total_chunk_z as f32).abs() * 147.0)
+                    let island_size = (total_chunk_z as f32).abs().mul_add(147.0, (total_chunk_x as f32).abs() * 3439.0)
                         % 13.0
                         + 9.0;
                     let xd = sub_section_x as f32 - (xo * 2) as f32;
                     let zd = sub_section_z as f32 - (zo * 2) as f32;
                     let new_doffs =
-                        (100.0_f32 - (xd * xd + zd * zd).sqrt() * island_size).clamp(-100.0, 80.0);
+                        xd.hypot(zd).mul_add(-island_size, 100.0_f32).clamp(-100.0, 80.0);
                     // Must NOT use f32::max here — Rust's max returns the non-NaN
                     // argument, while Java's Math.max propagates NaN. When the initial
                     // distance overflows i32, doffs becomes NaN and must stay NaN.

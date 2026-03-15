@@ -24,7 +24,7 @@ impl FlatChunkGenerator {
     pub fn new(bedrock: BlockStateId, dirt: BlockStateId, grass: BlockStateId) -> Self {
         let biome_id = REGISTRY
             .biomes
-            .id_from_key(&Identifier::vanilla("plains".to_string()))
+            .id_from_key(&Identifier::vanilla("plains".to_owned()))
             .unwrap_or(0) as u16;
 
         Self {

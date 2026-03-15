@@ -23,12 +23,12 @@ impl EntityArgument {
     /// Creates a selector for multiple entities
     #[must_use]
     pub const fn multiple() -> Self {
-        EntityArgument { one: false }
+        Self { one: false }
     }
     /// Creates a selector for one entity
     #[must_use]
     pub const fn one() -> Self {
-        EntityArgument { one: true }
+        Self { one: true }
     }
 }
 

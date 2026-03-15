@@ -167,7 +167,7 @@ impl PerlinNoise {
 
         for &amplitude in amplitudes {
             if amplitude != 0.0 {
-                value += amplitude * noise_value * value_factor;
+                value = (amplitude * noise_value).mul_add(value_factor, value);
             }
             value_factor /= 2.0;
         }
@@ -217,7 +217,7 @@ impl PerlinNoise {
                     y_scale * input_factor,
                     y_fudge * input_factor,
                 );
-                value += self.amplitudes[i] * noise_val * value_factor;
+                value = (self.amplitudes[i] * noise_val).mul_add(value_factor, value);
             }
 
             input_factor *= 2.0;
@@ -252,9 +252,9 @@ impl PerlinNoise {
     /// Index 0 is the highest frequency octave.
     #[must_use]
     pub fn get_octave_noise(&self, i: usize) -> Option<&ImprovedNoise> {
-        self.noise_levels
-            .get(self.noise_levels.len() - 1 - i)
-            .and_then(|opt| opt.as_ref())
+        let opt = self.noise_levels
+            .get(self.noise_levels.len() - 1 - i)?;
+        opt.as_ref()
     }
 }
 
@@ -267,7 +267,7 @@ impl PerlinNoise {
 #[inline]
 #[must_use]
 pub fn wrap(x: f64) -> f64 {
-    x - (x / ROUND_OFF + 0.5).floor() * ROUND_OFF
+    (x / ROUND_OFF + 0.5).floor().mul_add(-ROUND_OFF, x)
 }
 
 #[cfg(test)]

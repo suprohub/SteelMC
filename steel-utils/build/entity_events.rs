@@ -10,7 +10,7 @@ struct EntityEventJson {
     value: i32,
 }
 
-pub(crate) fn build() -> TokenStream {
+pub fn build() -> TokenStream {
     println!("cargo:rerun-if-changed=build_assets/entity_events.json");
 
     let file = fs::read_to_string("build_assets/entity_events.json")

@@ -117,7 +117,7 @@ impl Parameter {
 
     /// Create a parameter span from two parameters.
     #[must_use]
-    pub const fn span_params(min: &Parameter, max: &Parameter) -> Self {
+    pub const fn span_params(min: &Self, max: &Self) -> Self {
         debug_assert!(min.min <= max.max, "span_params: min > max");
         Self {
             min: min.min,
@@ -146,7 +146,7 @@ impl Parameter {
     /// Calculate the distance between two parameter ranges.
     #[inline]
     #[must_use]
-    pub const fn distance_param(&self, target: &Parameter) -> i64 {
+    pub const fn distance_param(&self, target: &Self) -> i64 {
         let above = target.min - self.max;
         let below = self.min - target.max;
         if above > 0 {
@@ -160,7 +160,7 @@ impl Parameter {
 
     /// Expand this parameter to include another parameter.
     #[must_use]
-    pub const fn span_with(&self, other: Option<&Parameter>) -> Self {
+    pub const fn span_with(&self, other: Option<&Self>) -> Self {
         match other {
             Some(o) => Self {
                 min: self.min.min(o.min),

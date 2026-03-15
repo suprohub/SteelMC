@@ -41,11 +41,11 @@ pub fn hermite_interpolate(
 ) -> f32 {
     let t = (input - x1) / (x2 - x1);
     let h = x2 - x1;
-    let a = d1 * h - (y2 - y1);
-    let b = -d2 * h + (y2 - y1);
-    let lerp_y = y1 + t * (y2 - y1);
-    let lerp_ab = a + t * (b - a);
-    lerp_y + t * (1.0 - t) * lerp_ab
+    let a = d1.mul_add(h, -(y2 - y1));
+    let b = (-d2).mul_add(h, y2 - y1);
+    let lerp_y = t.mul_add(y2 - y1, y1);
+    let lerp_ab = t.mul_add(b - a, a);
+    (t * (1.0 - t)).mul_add(lerp_ab, lerp_y)
 }
 
 /// Evaluate a spline defined by static data arrays.
@@ -72,13 +72,13 @@ pub fn evaluate_spline(
 
     if start < 0 {
         let value = value_at(0);
-        return value + derivatives[0] * (input - locations[0]);
+        return derivatives[0].mul_add(input - locations[0], value);
     }
 
     let start = start as usize;
     if start == last {
         let value = value_at(last);
-        return value + derivatives[last] * (input - locations[last]);
+        return derivatives[last].mul_add(input - locations[last], value);
     }
 
     let y1 = value_at(start);

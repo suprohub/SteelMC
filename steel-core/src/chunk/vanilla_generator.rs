@@ -595,7 +595,7 @@ impl<'a> FuzzedBiomeColumn<'a> {
                 rval = lcg_next(rval, self.biome_zoom_seed);
                 let fz = get_fiddle(rval);
 
-                let xz_partial = (dx + fx) * (dx + fx) + (dz + fz) * (dz + fz);
+                let xz_partial = (dz + fz).mul_add(dz + fz, (dx + fx) * (dx + fx));
                 self.candidates[cx_idx * 4 + base_idx + cz_off] = (fy, xz_partial);
             }
         }
@@ -638,7 +638,7 @@ impl<'a> FuzzedBiomeColumn<'a> {
         for i in 0..8usize {
             let (fy, xz_partial) = self.candidates[i];
             let dy = if (i & 2) == 0 { fract_y } else { fract_y - 1.0 };
-            let dist = xz_partial + (dy + fy) * (dy + fy);
+            let dist = (dy + fy).mul_add(dy + fy, xz_partial);
             if min_dist > dist {
                 min_i = i;
                 min_dist = dist;

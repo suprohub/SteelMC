@@ -133,14 +133,14 @@ impl FluidBehavior for LavaFluid {
 
         if above_block.config.is_air {
             if rand::random_range(0u32..100) == 0 {
-                let volume: f32 = rand::random::<f32>() * 0.2 + 0.2;
-                let pitch: f32 = rand::random::<f32>() * 0.15 + 0.9;
+                let volume: f32 = rand::random::<f32>().mul_add(0.2, 0.2);
+                let pitch: f32 = rand::random::<f32>().mul_add(0.15, 0.9);
                 world.play_block_sound(sound_events::BLOCK_LAVA_POP, pos, volume, pitch, None);
             }
 
             if rand::random_range(0u32..200) == 0 {
-                let volume: f32 = rand::random::<f32>() * 0.2 + 0.2;
-                let pitch: f32 = rand::random::<f32>() * 0.15 + 0.9;
+                let volume: f32 = rand::random::<f32>().mul_add(0.2, 0.2);
+                let pitch: f32 = rand::random::<f32>().mul_add(0.15, 0.9);
                 world.play_block_sound(sound_events::BLOCK_LAVA_AMBIENT, pos, volume, pitch, None);
             }
         }

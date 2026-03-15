@@ -51,11 +51,11 @@ impl Deref for LockedContainer {
 
     fn deref(&self) -> &Self::Target {
         match self {
-            LockedContainer::PlayerInventory(guard) => &**guard,
-            LockedContainer::CraftingContainer(guard) => &**guard,
-            LockedContainer::ResultContainer(guard) => &**guard,
-            LockedContainer::Other(guard) => &**guard,
-            LockedContainer::BlockEntity(guard) => (**guard)
+            Self::PlayerInventory(guard) => &**guard,
+            Self::CraftingContainer(guard) => &**guard,
+            Self::ResultContainer(guard) => &**guard,
+            Self::Other(guard) => &**guard,
+            Self::BlockEntity(guard) => (**guard)
                 .as_container()
                 .expect("BlockEntity variant should only be used for container block entities"),
         }
@@ -65,11 +65,11 @@ impl Deref for LockedContainer {
 impl DerefMut for LockedContainer {
     fn deref_mut(&mut self) -> &mut Self::Target {
         match self {
-            LockedContainer::PlayerInventory(guard) => &mut **guard,
-            LockedContainer::CraftingContainer(guard) => &mut **guard,
-            LockedContainer::ResultContainer(guard) => &mut **guard,
-            LockedContainer::Other(guard) => &mut **guard,
-            LockedContainer::BlockEntity(guard) => (**guard)
+            Self::PlayerInventory(guard) => &mut **guard,
+            Self::CraftingContainer(guard) => &mut **guard,
+            Self::ResultContainer(guard) => &mut **guard,
+            Self::Other(guard) => &mut **guard,
+            Self::BlockEntity(guard) => (**guard)
                 .as_container_mut()
                 .expect("BlockEntity variant should only be used for container block entities"),
         }
@@ -123,28 +123,28 @@ impl ContainerRef {
     #[must_use]
     pub fn container_id(&self) -> ContainerId {
         match self {
-            ContainerRef::PlayerInventory(arc) => ContainerId::from_arc(arc),
-            ContainerRef::CraftingContainer(arc) => ContainerId::from_arc(arc),
-            ContainerRef::ResultContainer(arc) => ContainerId::from_arc(arc),
-            ContainerRef::Other(arc) => ContainerId::from_arc(arc),
-            ContainerRef::BlockEntity(arc) => ContainerId::from_arc(arc),
+            Self::PlayerInventory(arc) => ContainerId::from_arc(arc),
+            Self::CraftingContainer(arc) => ContainerId::from_arc(arc),
+            Self::ResultContainer(arc) => ContainerId::from_arc(arc),
+            Self::Other(arc) => ContainerId::from_arc(arc),
+            Self::BlockEntity(arc) => ContainerId::from_arc(arc),
         }
     }
 
     /// Locks this container and returns a guard.
     fn lock(&self) -> LockedContainer {
         match self {
-            ContainerRef::PlayerInventory(arc) => {
+            Self::PlayerInventory(arc) => {
                 LockedContainer::PlayerInventory(SyncMutex::lock_arc(arc))
             }
-            ContainerRef::CraftingContainer(arc) => {
+            Self::CraftingContainer(arc) => {
                 LockedContainer::CraftingContainer(SyncMutex::lock_arc(arc))
             }
-            ContainerRef::ResultContainer(arc) => {
+            Self::ResultContainer(arc) => {
                 LockedContainer::ResultContainer(SyncMutex::lock_arc(arc))
             }
-            ContainerRef::Other(arc) => LockedContainer::Other(SyncMutex::lock_arc(arc)),
-            ContainerRef::BlockEntity(arc) => {
+            Self::Other(arc) => LockedContainer::Other(SyncMutex::lock_arc(arc)),
+            Self::BlockEntity(arc) => {
                 LockedContainer::BlockEntity(SyncMutex::lock_arc(arc))
             }
         }

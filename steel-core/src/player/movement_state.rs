@@ -55,6 +55,6 @@ impl MovementState {
     #[must_use]
     pub fn delta_movement_length_sq(&self) -> f64 {
         let dm = &self.delta_movement;
-        dm.x * dm.x + dm.y * dm.y + dm.z * dm.z
+        dm.z.mul_add(dm.z, dm.y.mul_add(dm.y, dm.x * dm.x))
     }
 }

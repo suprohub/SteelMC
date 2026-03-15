@@ -507,11 +507,9 @@ impl SurfaceNoiseProvider for SurfaceSystem {
 
     fn get_band(&self, x: i32, y: i32, z: i32) -> BlockStateId {
         // Java: (int)Math.round(noise * 4.0)
-        let offset = (self
+        let offset = self
             .clay_bands_offset_noise
-            .get_value(f64::from(x), 0.0, f64::from(z))
-            * 4.0
-            + 0.5)
+            .get_value(f64::from(x), 0.0, f64::from(z)).mul_add(4.0, 0.5)
             .floor() as i32;
         let index = ((y + offset) % CLAY_BAND_LENGTH as i32 + CLAY_BAND_LENGTH as i32) as usize
             % CLAY_BAND_LENGTH;

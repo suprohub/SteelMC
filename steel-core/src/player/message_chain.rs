@@ -67,7 +67,7 @@ impl SignedMessageLink {
 
     /// Checks if this link is a descendant of another (same sender/session, higher index)
     #[must_use]
-    pub fn is_descendant_of(&self, other: &SignedMessageLink) -> bool {
+    pub fn is_descendant_of(&self, other: &Self) -> bool {
         self.index > other.index
             && self.sender == other.sender
             && self.session_id == other.session_id

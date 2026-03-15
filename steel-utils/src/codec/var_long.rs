@@ -52,7 +52,7 @@ impl From<i64> for VarLong {
 
 #[allow(missing_docs)]
 impl From<VarLong> for i64 {
-    fn from(value: VarLong) -> i64 {
+    fn from(value: VarLong) -> Self {
         value.0
     }
 }

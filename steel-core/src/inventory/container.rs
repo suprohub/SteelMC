@@ -12,6 +12,7 @@ use steel_registry::item_stack::ItemStack;
 pub const DEFAULT_DISTANCE_BUFFER: f32 = 4.0;
 
 /// Something that contains items.
+///
 /// I also use container interchangeably with inventory as they mean approximately the same thing.
 /// But inventory could also refer to the player's inventory.
 /// Example: `PlayerInventory`, Chest, Temporary Crafting Table

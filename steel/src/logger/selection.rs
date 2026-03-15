@@ -7,7 +7,7 @@ pub struct Selection {
 
 impl Selection {
     pub const fn new() -> Self {
-        Selection {
+        Self {
             anchor: 0,
             active: 0,
         }

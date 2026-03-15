@@ -38,36 +38,36 @@ pub enum EquipmentSlot {
 
 impl EquipmentSlot {
     /// All equipment slots in order.
-    pub const ALL: [EquipmentSlot; 8] = [
-        EquipmentSlot::MainHand,
-        EquipmentSlot::OffHand,
-        EquipmentSlot::Feet,
-        EquipmentSlot::Legs,
-        EquipmentSlot::Chest,
-        EquipmentSlot::Head,
-        EquipmentSlot::Body,
-        EquipmentSlot::Saddle,
+    pub const ALL: [Self; 8] = [
+        Self::MainHand,
+        Self::OffHand,
+        Self::Feet,
+        Self::Legs,
+        Self::Chest,
+        Self::Head,
+        Self::Body,
+        Self::Saddle,
     ];
 
     /// Humanoid armor slots (head, chest, legs, feet).
-    pub const ARMOR_SLOTS: [EquipmentSlot; 4] = [
-        EquipmentSlot::Head,
-        EquipmentSlot::Chest,
-        EquipmentSlot::Legs,
-        EquipmentSlot::Feet,
+    pub const ARMOR_SLOTS: [Self; 4] = [
+        Self::Head,
+        Self::Chest,
+        Self::Legs,
+        Self::Feet,
     ];
 
     /// Returns the slot type for this equipment slot.
     #[must_use]
     pub const fn slot_type(self) -> EquipmentSlotType {
         match self {
-            EquipmentSlot::MainHand | EquipmentSlot::OffHand => EquipmentSlotType::Hand,
-            EquipmentSlot::Feet
-            | EquipmentSlot::Legs
-            | EquipmentSlot::Chest
-            | EquipmentSlot::Head => EquipmentSlotType::HumanoidArmor,
-            EquipmentSlot::Body => EquipmentSlotType::AnimalArmor,
-            EquipmentSlot::Saddle => EquipmentSlotType::Saddle,
+            Self::MainHand | Self::OffHand => EquipmentSlotType::Hand,
+            Self::Feet
+            | Self::Legs
+            | Self::Chest
+            | Self::Head => EquipmentSlotType::HumanoidArmor,
+            Self::Body => EquipmentSlotType::AnimalArmor,
+            Self::Saddle => EquipmentSlotType::Saddle,
         }
     }
 
@@ -75,14 +75,14 @@ impl EquipmentSlot {
     #[must_use]
     pub const fn index(self) -> usize {
         match self {
-            EquipmentSlot::MainHand => 0,
-            EquipmentSlot::OffHand => 1,
-            EquipmentSlot::Feet => 2,
-            EquipmentSlot::Legs => 3,
-            EquipmentSlot::Chest => 4,
-            EquipmentSlot::Head => 5,
-            EquipmentSlot::Body => 6,
-            EquipmentSlot::Saddle => 7,
+            Self::MainHand => 0,
+            Self::OffHand => 1,
+            Self::Feet => 2,
+            Self::Legs => 3,
+            Self::Chest => 4,
+            Self::Head => 5,
+            Self::Body => 6,
+            Self::Saddle => 7,
         }
     }
 
@@ -99,14 +99,14 @@ impl EquipmentSlot {
     #[must_use]
     pub fn by_name(name: &str) -> Option<Self> {
         match name {
-            "mainhand" => Some(EquipmentSlot::MainHand),
-            "offhand" => Some(EquipmentSlot::OffHand),
-            "feet" => Some(EquipmentSlot::Feet),
-            "legs" => Some(EquipmentSlot::Legs),
-            "chest" => Some(EquipmentSlot::Chest),
-            "head" => Some(EquipmentSlot::Head),
-            "body" => Some(EquipmentSlot::Body),
-            "saddle" => Some(EquipmentSlot::Saddle),
+            "mainhand" => Some(Self::MainHand),
+            "offhand" => Some(Self::OffHand),
+            "feet" => Some(Self::Feet),
+            "legs" => Some(Self::Legs),
+            "chest" => Some(Self::Chest),
+            "head" => Some(Self::Head),
+            "body" => Some(Self::Body),
+            "saddle" => Some(Self::Saddle),
             _ => None,
         }
     }
@@ -115,14 +115,14 @@ impl EquipmentSlot {
     #[must_use]
     pub const fn name(self) -> &'static str {
         match self {
-            EquipmentSlot::MainHand => "mainhand",
-            EquipmentSlot::OffHand => "offhand",
-            EquipmentSlot::Feet => "feet",
-            EquipmentSlot::Legs => "legs",
-            EquipmentSlot::Chest => "chest",
-            EquipmentSlot::Head => "head",
-            EquipmentSlot::Body => "body",
-            EquipmentSlot::Saddle => "saddle",
+            Self::MainHand => "mainhand",
+            Self::OffHand => "offhand",
+            Self::Feet => "feet",
+            Self::Legs => "legs",
+            Self::Chest => "chest",
+            Self::Head => "head",
+            Self::Body => "body",
+            Self::Saddle => "saddle",
         }
     }
 }

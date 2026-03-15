@@ -18,7 +18,7 @@ impl PrefixedRead for String {
 
         let mut buf = vec![0; len];
         data.read_exact(&mut buf)?;
-        Ok(unsafe { String::from_utf8_unchecked(buf) })
+        Ok(unsafe { Self::from_utf8_unchecked(buf) })
     }
 }
 
@@ -34,7 +34,7 @@ impl<T: ReadFrom> PrefixedRead for Vec<T> {
         if len > bound {
             Err(Error::other("To long"))?;
         }
-        let mut items = Vec::with_capacity(len);
+        let mut items = Self::with_capacity(len);
         for _ in 0..len {
             items.push(T::read(data)?);
         }

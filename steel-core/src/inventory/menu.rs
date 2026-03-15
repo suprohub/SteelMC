@@ -1,4 +1,5 @@
 //! A menu can be considered everything that's shown on the screen.
+//!
 //! It consists of slots, slots consist of a view into a single inventory and position.
 //! When you have a chest open for example a chest menu is shown, consisting of the chests slots and the players inventory slots.
 //!
@@ -541,7 +542,7 @@ impl MenuBehavior {
     /// slots that reference the same underlying container position will transfer.
     ///
     /// Based on Java's `AbstractContainerMenu::transferState`.
-    pub fn transfer_state(&mut self, other: &MenuBehavior) {
+    pub fn transfer_state(&mut self, other: &Self) {
         use rustc_hash::FxHashMap;
 
         // Build a map of (container_id, container_slot) -> slot_index for the other menu
@@ -1100,7 +1101,7 @@ impl MenuBehavior {
         let slot_item = slot.get_item(&guard).clone();
 
         if !slot_item.is_empty() {
-            let mut cloned = slot_item.clone();
+            let mut cloned = slot_item;
             cloned.set_count(cloned.max_stack_size());
             self.carried = cloned;
         }
@@ -1355,7 +1356,7 @@ pub trait Menu {
                 let max_size = target_slot.get_max_stack_size_for_item(&guard, &source_item);
                 if source_item.count > max_size {
                     // Split the stack
-                    let mut to_place = source_item.clone();
+                    let mut to_place = source_item;
                     to_place.set_count(max_size);
                     target_slot.set_by_player(&mut guard, to_place, &ItemStack::empty());
                     if let Some(inv) = guard.get_mut(player_inv_id) {
@@ -1375,7 +1376,7 @@ pub trait Menu {
                 let max_size = target_slot.get_max_stack_size_for_item(&guard, &source_item);
                 if source_item.count > max_size {
                     // Source is too big - place partial and add target to inventory
-                    let mut to_place = source_item.clone();
+                    let mut to_place = source_item;
                     to_place.set_count(max_size);
                     target_slot.set_by_player(&mut guard, to_place, &target_item);
                     if let Some(remainder) = target_slot.on_take(&mut guard, &target_item, player) {

@@ -132,7 +132,7 @@ impl Server {
         worlds.insert(THE_NETHER.key.clone(), nether);
         worlds.insert(THE_END.key.clone(), end);
 
-        Server {
+        Self {
             cancel_token,
             key_store: KeyStore::create(),
             worlds,

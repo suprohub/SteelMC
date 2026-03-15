@@ -38,7 +38,7 @@ struct Strategy {
     /// For Prefixed: the prefix type (e.g., `VarInt`, u16)
     prefix_type: Option<syn::Type>,
     /// For container strategies: how to read/write inner elements
-    inner: Option<Box<Strategy>>,
+    inner: Option<Box<Self>>,
 }
 
 impl Strategy {
@@ -125,7 +125,7 @@ impl Parse for Strategy {
             }
         }
 
-        Ok(Strategy {
+        Ok(Self {
             name,
             prefix_type,
             inner,

@@ -37,7 +37,7 @@ impl WriteTo for Todo {
 impl ReadFrom for Todo {
     fn read(_data: &mut Cursor<&[u8]>) -> io::Result<Self> {
         // Placeholder components read nothing
-        Ok(Todo)
+        Ok(Self)
     }
 }
 
@@ -58,7 +58,7 @@ impl simdnbt::ToNbtTag for Todo {
 impl simdnbt::FromNbtTag for Todo {
     fn from_nbt_tag(_tag: simdnbt::borrow::NbtTag) -> Option<Self> {
         // Placeholder components always deserialize successfully
-        Some(Todo)
+        Some(Self)
     }
 }
 
@@ -135,8 +135,8 @@ impl ChunkPos {
 
     /// Returns all 8 neighbors of this chunk position.
     #[must_use]
-    pub fn neighbors(&self) -> [ChunkPos; 8] {
-        Self::OFFSETS.map(|(dx, dy)| ChunkPos::new(self.0.x + dx, self.0.y + dy))
+    pub fn neighbors(&self) -> [Self; 8] {
+        Self::OFFSETS.map(|(dx, dy)| Self::new(self.0.x + dx, self.0.y + dy))
     }
 
     #[must_use]
@@ -192,7 +192,7 @@ pub struct BlockPos(pub Vector3<i32>);
 
 impl From<Vector3<f64>> for BlockPos {
     fn from(value: Vector3<f64>) -> Self {
-        BlockPos(Vector3 {
+        Self(Vector3 {
             x: value.x.floor() as i32,
             y: value.y.floor() as i32,
             z: value.z.floor() as i32,
@@ -209,7 +209,7 @@ impl BlockPos {
     const PACKED_X_MASK: i64 = (1i64 << Self::PACKED_HORIZONTAL_LEN) - 1;
     const PACKED_Y_MASK: i64 = (1i64 << Self::PACKED_Y_LEN) - 1;
     const PACKED_Z_MASK: i64 = (1i64 << Self::PACKED_HORIZONTAL_LEN) - 1;
-    pub const ZERO: BlockPos = BlockPos(Vector3::new(0, 0, 0));
+    pub const ZERO: Self = Self(Vector3::new(0, 0, 0));
 
     /// Maximum horizontal coordinate value: `(1 << 26) / 2 - 1 = 33554431`
     pub const MAX_HORIZONTAL_COORDINATE: i32 = (1 << Self::PACKED_HORIZONTAL_LEN) / 2 - 1;
@@ -422,13 +422,13 @@ impl BlockPos {
 
     /// Returns the minimum coordinates of two positions.
     #[must_use]
-    pub const fn min(a: &BlockPos, b: &BlockPos) -> Self {
+    pub const fn min(a: &Self, b: &Self) -> Self {
         Self::new(a.0.x.min(b.0.x), a.0.y.min(b.0.y), a.0.z.min(b.0.z))
     }
 
     /// Returns the maximum coordinates of two positions.
     #[must_use]
-    pub const fn max(a: &BlockPos, b: &BlockPos) -> Self {
+    pub const fn max(a: &Self, b: &Self) -> Self {
         Self::new(a.0.x.max(b.0.x), a.0.y.max(b.0.y), a.0.z.max(b.0.z))
     }
 }
@@ -745,10 +745,10 @@ impl GameType {
     #[must_use]
     pub const fn name(&self) -> &'static str {
         match self {
-            GameType::Survival => "survival",
-            GameType::Creative => "creative",
-            GameType::Adventure => "adventure",
-            GameType::Spectator => "spectator",
+            Self::Survival => "survival",
+            Self::Creative => "creative",
+            Self::Adventure => "adventure",
+            Self::Spectator => "spectator",
         }
     }
 }
@@ -757,10 +757,10 @@ impl ReadFrom for GameType {
     fn read(data: &mut Cursor<&[u8]>) -> io::Result<Self> {
         let value = VarInt::read(data)?.0;
         match value {
-            0 => Ok(GameType::Survival),
-            1 => Ok(GameType::Creative),
-            2 => Ok(GameType::Adventure),
-            3 => Ok(GameType::Spectator),
+            0 => Ok(Self::Survival),
+            1 => Ok(Self::Creative),
+            2 => Ok(Self::Adventure),
+            3 => Ok(Self::Spectator),
             _ => Err(io::Error::new(
                 io::ErrorKind::InvalidData,
                 "Invalid GameType",
@@ -772,20 +772,20 @@ impl ReadFrom for GameType {
 #[allow(missing_docs)]
 impl From<GameType> for i8 {
     fn from(value: GameType) -> Self {
-        value as i8
+        value as Self
     }
 }
 
 #[allow(missing_docs)]
 impl From<GameType> for i32 {
     fn from(value: GameType) -> Self {
-        value as i32
+        value as Self
     }
 }
 
 impl From<GameType> for f32 {
     fn from(value: GameType) -> Self {
-        f32::from(value as i8)
+        Self::from(value as i8)
     }
 }
 
@@ -793,10 +793,10 @@ impl From<GameType> for f32 {
 impl From<i8> for GameType {
     fn from(value: i8) -> Self {
         match value {
-            1 => GameType::Creative,
-            2 => GameType::Adventure,
-            3 => GameType::Spectator,
-            _ => GameType::Survival,
+            1 => Self::Creative,
+            2 => Self::Adventure,
+            3 => Self::Spectator,
+            _ => Self::Survival,
         }
     }
 }
@@ -805,10 +805,10 @@ impl From<i8> for GameType {
 impl From<i32> for GameType {
     fn from(value: i32) -> Self {
         match value {
-            1 => GameType::Creative,
-            2 => GameType::Adventure,
-            3 => GameType::Spectator,
-            _ => GameType::Survival,
+            1 => Self::Creative,
+            2 => Self::Adventure,
+            3 => Self::Spectator,
+            _ => Self::Survival,
         }
     }
 }
@@ -817,10 +817,10 @@ impl From<i32> for GameType {
 impl From<f32> for GameType {
     fn from(value: f32) -> Self {
         match value {
-            1. => GameType::Creative,
-            2. => GameType::Adventure,
-            3. => GameType::Spectator,
-            _ => GameType::Survival,
+            1. => Self::Creative,
+            2. => Self::Adventure,
+            3. => Self::Spectator,
+            _ => Self::Survival,
         }
     }
 }
@@ -850,14 +850,14 @@ impl Identifier {
         namespace: impl Into<Cow<'static, str>>,
         path: impl Into<Cow<'static, str>>,
     ) -> Self {
-        Identifier {
+        Self {
             namespace: namespace.into(),
             path: path.into(),
         }
     }
     #[must_use]
     pub const fn new_static(namespace: &'static str, path: &'static str) -> Self {
-        Identifier {
+        Self {
             namespace: Cow::Borrowed(namespace),
             path: Cow::Borrowed(path),
         }
@@ -866,7 +866,7 @@ impl Identifier {
     /// Creates a new `Identifier` with the vanilla namespace.
     #[must_use]
     pub const fn vanilla(path: String) -> Self {
-        Identifier {
+        Self {
             namespace: Cow::Borrowed(Self::VANILLA_NAMESPACE),
             path: Cow::Owned(path),
         }
@@ -875,7 +875,7 @@ impl Identifier {
     /// Creates a new `Identifier` with the vanilla namespace and a static path.
     #[must_use]
     pub const fn vanilla_static(path: &'static str) -> Self {
-        Identifier {
+        Self {
             namespace: Cow::Borrowed(Self::VANILLA_NAMESPACE),
             path: Cow::Borrowed(path),
         }
@@ -931,17 +931,17 @@ impl FromStr for Identifier {
             return Err("Invalid resource location");
         }
 
-        if !Identifier::validate_namespace(parts[0]) {
+        if !Self::validate_namespace(parts[0]) {
             return Err("Invalid namespace");
         }
 
-        if !Identifier::validate_path(parts[1]) {
+        if !Self::validate_path(parts[1]) {
             return Err("Invalid path");
         }
 
-        Ok(Identifier {
-            namespace: Cow::Owned(parts[0].to_string()),
-            path: Cow::Owned(parts[1].to_string()),
+        Ok(Self {
+            namespace: Cow::Owned(parts[0].to_owned()),
+            path: Cow::Owned(parts[1].to_owned()),
         })
     }
 }
@@ -962,7 +962,7 @@ impl<'de> Deserialize<'de> for Identifier {
         D: serde::Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-        Identifier::from_str(&s).map_err(D::Error::custom)
+        Self::from_str(&s).map_err(D::Error::custom)
     }
 }
 
@@ -971,7 +971,7 @@ impl<'de> Deserialize<'de> for Identifier {
 // as a String (length-prefixed UTF-8 bytes). The size_of method returns exactly the
 // number of bytes that write will produce.
 unsafe impl<C: Config> SchemaWrite<C> for Identifier {
-    type Src = Identifier;
+    type Src = Self;
 
     fn size_of(src: &Self::Src) -> wincode::WriteResult<usize> {
         <str as SchemaWrite<C>>::size_of(&src.to_string())
@@ -986,7 +986,7 @@ unsafe impl<C: Config> SchemaWrite<C> for Identifier {
 // already safe, and then validates the result as a valid Identifier. The read
 // method initializes `dst` if and only if it returns Ok(()).
 unsafe impl<'de, C: Config> SchemaRead<'de, C> for Identifier {
-    type Dst = Identifier;
+    type Dst = Self;
 
     fn read(reader: impl Reader<'de>, dst: &mut MaybeUninit<Self::Dst>) -> wincode::ReadResult<()> {
         let mut s = MaybeUninit::<String>::uninit();
@@ -995,7 +995,7 @@ unsafe impl<'de, C: Config> SchemaRead<'de, C> for Identifier {
         // SAFETY: String::read succeeded, so s is initialized
         let s = unsafe { s.assume_init() };
 
-        dst.write(Identifier::from_str(&s).map_err(wincode::ReadError::Custom)?);
+        dst.write(Self::from_str(&s).map_err(wincode::ReadError::Custom)?);
         Ok(())
     }
 }
@@ -1013,8 +1013,8 @@ impl ReadFrom for InteractionHand {
     fn read(data: &mut Cursor<&[u8]>) -> io::Result<Self> {
         let id = VarInt::read(data)?.0;
         match id {
-            0 => Ok(InteractionHand::MainHand),
-            1 => Ok(InteractionHand::OffHand),
+            0 => Ok(Self::MainHand),
+            1 => Ok(Self::OffHand),
             _ => Err(io::Error::other("Invalid InteractionHand id")),
         }
     }

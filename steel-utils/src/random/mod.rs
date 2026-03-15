@@ -46,11 +46,11 @@ pub trait Random {
     fn next_gaussian(&mut self) -> f64;
 
     fn triangle(&mut self, min: f64, max: f64) -> f64 {
-        min + max * (self.next_f64() - self.next_f64())
+        max.mul_add(self.next_f64() - self.next_f64(), min)
     }
 
     fn triangle_f32(&mut self, min: f32, max: f32) -> f32 {
-        min + max * (self.next_f32() - self.next_f32())
+        max.mul_add(self.next_f32() - self.next_f32(), min)
     }
 
     fn next_positional(&mut self) -> RandomSplitter;

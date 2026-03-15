@@ -3,6 +3,7 @@ use std::io::{Cursor, Error, Write};
 use crate::serial::{ReadFrom, WriteTo};
 
 /// An enum that represents one of two possible types (Left or Right).
+///
 /// When serialized, it writes only the inner value without any discriminant.
 /// The discriminant must be managed externally (e.g., via a separate boolean field).
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

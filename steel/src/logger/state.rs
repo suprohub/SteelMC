@@ -28,7 +28,7 @@ pub struct LogState {
 
 impl LogState {
     pub async fn new(path: &'static str, cancel_token: CancellationToken) -> Self {
-        LogState {
+        Self {
             out: Output::new(),
             completion: Completer::new(),
             history: History::new(path).await,

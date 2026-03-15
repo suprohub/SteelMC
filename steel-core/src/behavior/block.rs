@@ -335,7 +335,7 @@ pub trait BlockBehaviour: Send + Sync {
     /// Override for liquid blocks (water/lava) to return the appropriate fluid based on LEVEL.
     #[allow(unused_variables)]
     fn get_fluid_state(&self, state: BlockStateId) -> FluidState {
-        if let Some(true) = state.try_get_value(&BlockStateProperties::WATERLOGGED) {
+        if state.try_get_value(&BlockStateProperties::WATERLOGGED) == Some(true) {
             FluidState::source(&vanilla_fluids::WATER)
         } else {
             FluidState::EMPTY

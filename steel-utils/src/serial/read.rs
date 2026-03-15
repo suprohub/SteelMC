@@ -128,7 +128,7 @@ impl ReadFrom for Uuid {
         let most_significant_bits = u64::read(data)?;
         let least_significant_bits = u64::read(data)?;
 
-        Ok(Uuid::from_u64_pair(
+        Ok(Self::from_u64_pair(
             most_significant_bits,
             least_significant_bits,
         ))
@@ -137,6 +137,6 @@ impl ReadFrom for Uuid {
 
 impl ReadFrom for Identifier {
     fn read(data: &mut Cursor<&[u8]>) -> Result<Self> {
-        Identifier::from_str(&String::read_prefixed::<VarInt>(data)?).map_err(Error::other)
+        Self::from_str(&String::read_prefixed::<VarInt>(data)?).map_err(Error::other)
     }
 }

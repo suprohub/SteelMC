@@ -52,7 +52,7 @@ impl RamOnlyStorage {
         height: i32,
         level: Weak<World>,
     ) -> io::Result<Option<(ChunkAccess, ChunkStatus)>> {
-        if let Ok(true) = self.chunk_exists(pos).await {
+        if matches!(self.chunk_exists(pos).await, Ok(true)) {
             if let Some(storage) = self.saved_chunks.read().await.get(&pos) {
                 Ok(Some((
                     ChunkStorage::persistent_to_chunk(

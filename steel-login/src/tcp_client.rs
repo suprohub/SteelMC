@@ -356,7 +356,7 @@ impl JavaTcpClient {
             ConnectionProtocol::Status => self.handle_status(packet).await,
             ConnectionProtocol::Login => self.handle_login(packet).await,
             ConnectionProtocol::Config => self.handle_config(packet).await,
-            ConnectionProtocol::Play => Err(PacketError::InvalidProtocol("Play".to_string())),
+            ConnectionProtocol::Play => Err(PacketError::InvalidProtocol("Play".to_owned())),
         }
     }
 
@@ -396,7 +396,7 @@ impl JavaTcpClient {
                 self.handle_ping_request(SPingRequest::read_packet(data)?)
                     .await;
             }
-            _ => return Err(PacketError::InvalidProtocol("Status".to_string())),
+            _ => return Err(PacketError::InvalidProtocol("Status".to_owned())),
         }
         Ok(())
     }
@@ -411,7 +411,7 @@ impl JavaTcpClient {
             login_packets::S_LOGIN_ACKNOWLEDGED => {
                 self.handle_login_acknowledged().await;
             }
-            _ => return Err(PacketError::InvalidProtocol("Login".to_string())),
+            _ => return Err(PacketError::InvalidProtocol("Login".to_owned())),
         }
         Ok(())
     }
@@ -435,7 +435,7 @@ impl JavaTcpClient {
             config::S_FINISH_CONFIGURATION => {
                 self.finish_configuration().await;
             }
-            _ => return Err(PacketError::InvalidProtocol("Config".to_string())),
+            _ => return Err(PacketError::InvalidProtocol("Config".to_owned())),
         }
         Ok(())
     }

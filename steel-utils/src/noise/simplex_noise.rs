@@ -68,13 +68,13 @@ impl SimplexNoise {
     /// Dot product of gradient vector and offset vector.
     #[inline]
     fn dot(g: &[f64; 3], x: f64, y: f64, z: f64) -> f64 {
-        g[0] * x + g[1] * y + g[2] * z
+        g[2].mul_add(z, g[1].mul_add(y, g[0] * x))
     }
 
     /// Compute corner noise contribution for a simplex vertex.
     #[inline]
     fn corner_noise_3d(index: usize, x: f64, y: f64, z: f64, base: f64) -> f64 {
-        let t0 = base - x * x - y * y - z * z;
+        let t0 = z.mul_add(-z, y.mul_add(-y, x.mul_add(-x, base)));
         if t0 < 0.0 {
             0.0
         } else {
@@ -100,8 +100,8 @@ impl SimplexNoise {
 
         let x1 = x0 - f64::from(i1) + G2;
         let y1 = y0 - f64::from(j1) + G2;
-        let x2 = x0 - 1.0 + 2.0 * G2;
-        let y2 = y0 - 1.0 + 2.0 * G2;
+        let x2 = 2.0f64.mul_add(G2, x0 - 1.0);
+        let y2 = 2.0f64.mul_add(G2, y0 - 1.0);
 
         let ii = i & 0xFF;
         let jj = j & 0xFF;

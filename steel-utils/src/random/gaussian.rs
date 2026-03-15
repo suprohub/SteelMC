@@ -15,8 +15,8 @@ pub trait MarsagliaPolarGaussian: Random {
             gaussian
         } else {
             loop {
-                let d = 2.0 * self.next_f64() - 1.0;
-                let e = 2.0 * self.next_f64() - 1.0;
+                let d = 2.0f64.mul_add(self.next_f64(), -1.0);
+                let e = 2.0f64.mul_add(self.next_f64(), -1.0);
                 let f = d * d + e * e;
 
                 if f < 1.0 && f != 0.0 {

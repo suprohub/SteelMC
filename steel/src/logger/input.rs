@@ -45,7 +45,7 @@ impl CommandLogger {
                     break;
                 }
 
-                if let Ok(true) = poll(Duration::from_millis(50)) {
+                if matches!(poll(Duration::from_millis(50)), Ok(true)) {
                     let event = read().expect("Event bug; Cannot read event.");
                     // On Windows, crossterm sends both Press and Release events.
                     // Only handle Press events to avoid duplicate input.

@@ -3,7 +3,6 @@
 //! Handles sign placement and block entity creation for all sign types.
 
 use std::cmp::Ordering;
-use std::f64::consts::PI;
 use std::sync::{Arc, Weak};
 
 use steel_macros::block_behavior;
@@ -94,7 +93,7 @@ fn is_facing_front_text(state: BlockStateId, pos: BlockPos, player: &Player) -> 
     let dz = player_pos.z - (f64::from(pos.0.z) + 0.5);
 
     // Calculate angle from sign to player (in degrees, -90 to account for Minecraft's coordinate system)
-    let player_angle = (dz.atan2(dx) * 180.0 / PI) as f32 - 90.0;
+    let player_angle = dz.atan2(dx).to_degrees() as f32 - 90.0;
 
     // Front text if the angle difference is <= 90 degrees
     let diff = (sign_y_rot - player_angle + 180.0).rem_euclid(360.0) - 180.0;

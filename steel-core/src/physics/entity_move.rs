@@ -374,8 +374,8 @@ fn try_step_up(
 
     // Check if we made more horizontal progress
     let ground_dist_sq =
-        ground_result.actual_movement.x.powi(2) + ground_result.actual_movement.z.powi(2);
-    let step_dist_sq = resolved.x.powi(2) + resolved.z.powi(2);
+        ground_result.actual_movement.z.mul_add(ground_result.actual_movement.z, ground_result.actual_movement.x.powi(2));
+    let step_dist_sq = resolved.z.mul_add(resolved.z, resolved.x.powi(2));
 
     if step_dist_sq <= ground_dist_sq {
         // Step didn't help, use ground result

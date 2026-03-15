@@ -120,7 +120,7 @@ impl From<usize> for VarInt {
 #[allow(missing_docs)]
 #[allow(clippy::cast_sign_loss)]
 impl From<VarInt> for usize {
-    fn from(value: VarInt) -> usize {
+    fn from(value: VarInt) -> Self {
         value.0 as _
     }
 }
@@ -134,7 +134,7 @@ impl From<i32> for VarInt {
 
 #[allow(missing_docs)]
 impl From<VarInt> for i32 {
-    fn from(value: VarInt) -> i32 {
+    fn from(value: VarInt) -> Self {
         value.0
     }
 }

@@ -60,9 +60,9 @@ impl JavaTcpClient {
         }
 
         self.send_bare_packet_now(CSelectKnownPacks::new(vec![KnownPack::new(
-            "minecraft".to_string(),
-            "core".to_string(),
-            STEEL_CONFIG.mc_version.to_string(),
+            "minecraft".to_owned(),
+            "core".to_owned(),
+            STEEL_CONFIG.mc_version.to_owned(),
         )]))
         .await;
     }

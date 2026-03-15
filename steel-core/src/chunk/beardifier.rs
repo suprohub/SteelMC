@@ -102,7 +102,7 @@ fn fast_inv_sqrt(x: f64) -> f64 {
     let i = f64::to_bits(x) as i64;
     let i = 0x5FE6_EB50_C7B5_37A9_i64 - (i >> 1);
     let mut x = f64::from_bits(i as u64);
-    x *= 1.5f64 - xhalf * x * x;
+    x *= (xhalf * x).mul_add(-x, 1.5f64);
     x
 }
 
@@ -136,7 +136,7 @@ fn get_beard_contribution(dx: i32, dy: i32, dz: i32, y_to_ground: i32) -> f64 {
 ///
 /// Simple linear falloff: 1.0 at distance 0, 0.0 at distance 6.
 fn get_bury_contribution(dx: f64, dy: f64, dz: f64) -> f64 {
-    let distance = (dx * dx + dy * dy + dz * dz).sqrt();
+    let distance = dz.mul_add(dz, dy.mul_add(dy, dx * dx)).sqrt();
     map_clamped(distance, 0.0, 6.0, 1.0, 0.0)
 }
 
@@ -276,7 +276,7 @@ impl Beardifier {
             let dx = block_x - junction.source_x;
             let dy = block_y - junction.source_ground_y;
             let dz = block_z - junction.source_z;
-            value += get_beard_contribution(dx, dy, dz, dy) * 0.4;
+            value = get_beard_contribution(dx, dy, dz, dy).mul_add(0.4, value);
         }
 
         value

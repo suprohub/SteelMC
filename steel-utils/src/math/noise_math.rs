@@ -11,7 +11,7 @@ use std::f64::consts::PI;
 #[inline]
 #[must_use]
 pub fn smoothstep(x: f64) -> f64 {
-    x * x * x * (x * (x * 6.0 - 15.0) + 10.0)
+    x * x * x * x.mul_add(x.mul_add(6.0, -15.0), 10.0)
 }
 
 /// Smoothstep derivative for noise with derivatives.
@@ -56,7 +56,7 @@ pub fn lfloor(v: f64) -> i64 {
 #[inline]
 #[must_use]
 pub fn lerp(alpha: f64, a: f64, b: f64) -> f64 {
-    a + alpha * (b - a)
+    alpha.mul_add(b - a, a)
 }
 
 /// Bilinear interpolation.

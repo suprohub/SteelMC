@@ -157,7 +157,7 @@ pub struct ClientInformation {
 impl Default for ClientInformation {
     fn default() -> Self {
         Self {
-            language: "en_us".to_string(),
+            language: "en_us".to_owned(),
             view_distance: 8, // Default client view distance
             chat_visibility: ChatVisibility::Full,
             chat_colors: true,
@@ -323,7 +323,7 @@ impl Player {
         world: Arc<World>,
         server: Weak<Server>,
         entity_id: i32,
-        player: &Weak<Player>,
+        player: &Weak<Self>,
         client_information: ClientInformation,
     ) -> Self {
         // Create a single shared inventory container used by both the player and inventory menu
@@ -608,13 +608,13 @@ impl Player {
             .data()
             .has_expired_with_grace(profile_key::EXPIRY_GRACE_PERIOD)
         {
-            return Err("Profile key has expired".to_string());
+            return Err("Profile key has expired".to_owned());
         }
 
         let chain = chat.message_chain.as_mut().ok_or("No message chain")?;
 
         if chain.is_broken() {
-            return Err("Message chain is broken".to_string());
+            return Err("Message chain is broken".to_owned());
         }
 
         let timestamp =
@@ -663,13 +663,13 @@ impl Player {
         if is_valid {
             Ok((link, body.last_seen.clone()))
         } else {
-            Err("Invalid signature".to_string())
+            Err("Invalid signature".to_owned())
         }
     }
 
     /// Handles a chat message from the player.
     #[allow(clippy::too_many_lines)]
-    pub fn handle_chat(&self, packet: SChat, player: Arc<Player>) {
+    pub fn handle_chat(&self, packet: SChat, player: Arc<Self>) {
         let chat_message = packet.message.clone();
 
         let verification_result = if let Some(_signature) = &packet.signature {
@@ -930,7 +930,7 @@ impl Player {
                 let dx = target_pos.x - first_good.x;
                 let dy = target_pos.y - first_good.y;
                 let dz = target_pos.z - first_good.z;
-                let moved_dist_sq = dx * dx + dy * dy + dz * dz;
+                let moved_dist_sq = dz.mul_add(dz, dy.mul_add(dy, dx * dx));
 
                 if moved_dist_sq > 1.0 {
                     let (yaw, pitch) = self.rotation.load();
@@ -1921,7 +1921,7 @@ impl Player {
         let result = game_mode::use_item_on(self, &self.world, packet.hand, &packet.block_hit);
 
         // 9. Handle result
-        if let InteractionResult::Success = result {
+        if result == InteractionResult::Success {
             // TODO: Trigger arm swing animation if needed
             self.swing(packet.hand, true);
         }
@@ -2013,7 +2013,7 @@ impl Player {
         let result = game_mode::use_item(self, &self.world, packet.hand);
 
         // Handle result
-        if let InteractionResult::Success = result {
+        if result == InteractionResult::Success {
             // Trigger arm swing animation
             self.swing(packet.hand, true);
         }
@@ -2371,7 +2371,7 @@ impl Player {
             Vector3::new(
                 f64::from(-sin_yaw * cos_pitch * 0.3)
                     + f64::from(angle_offset.cos() * power_offset),
-                f64::from(-sin_pitch * 0.3 + 0.1)
+                f64::from((-sin_pitch).mul_add(0.3, 0.1))
                     + f64::from((rand::random::<f32>() - rand::random::<f32>()) * 0.1),
                 f64::from(cos_yaw * cos_pitch * 0.3) + f64::from(angle_offset.sin() * power_offset),
             )
@@ -2724,7 +2724,7 @@ impl Player {
 
         self.send_packet(CRespawn {
             dimension_type: dimension_type_id,
-            dimension_name: dimension_key.clone(),
+            dimension_name: dimension_key,
             hashed_seed: world.obfuscated_seed(),
             gamemode: self.game_mode.load() as u8,
             previous_gamemode: self.prev_game_mode.load() as i8,
@@ -2957,7 +2957,7 @@ impl Entity for Player {
     fn hurt(&self, source: &DamageSource, amount: f32) -> bool {
         // Delegates to Player's inherent hurt method which handles
         // invulnerability, armor, death, and network packets.
-        Player::hurt(self, source, amount)
+        Self::hurt(self, source, amount)
     }
 }
 

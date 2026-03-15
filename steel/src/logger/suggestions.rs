@@ -22,7 +22,7 @@ pub struct Completer {
 }
 impl Completer {
     pub const fn new() -> Self {
-        Completer {
+        Self {
             enabled: false,
             error: false,
             selected: 0,
@@ -147,7 +147,7 @@ impl Completer {
         } else {
             &self.suggestions[self.selected]
         };
-        self.completed = text.to_string();
+        self.completed = text.to_owned();
         out.flush()?;
 
         if !out.is_at_end() {

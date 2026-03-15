@@ -313,7 +313,7 @@ impl TranspileContext {
         if visited.contains(name) {
             return;
         }
-        visited.insert(name.to_string());
+        visited.insert(name.to_owned());
         if let Some(df) = input.registry.get(name) {
             for dep in collect_references(df) {
                 if self.used_names.contains(&dep) {
@@ -321,7 +321,7 @@ impl TranspileContext {
                 }
             }
         }
-        order.push(name.to_string());
+        order.push(name.to_owned());
     }
 
     // ── Phase 2: Code generation ────────────────────────────────────────
