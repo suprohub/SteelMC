@@ -1,0 +1,76 @@
+# Original file (with documentation): https://github.com/bevyengine/bevy/blob/main/.cargo/config_fast_builds.toml
+
+[build]
+rustflags = [
+  # Native cpu
+  "-Ctarget-cpu=native",
+
+  # Add more threads if you have more cpu cores
+  "-Zthreads=8",
+  # You can also enable share generics
+  # but there are still performace regressions:
+  # https://github.com/rust-lang/rust/pull/123610
+  #
+  # "-Zshare-generics=y",
+]
+
+[target.x86_64-unknown-linux-gnu]
+# You can install mold linker if you want:
+# - Ubuntu: `sudo apt-get install mold clang`
+# - Fedora: `sudo dnf install mold clang`
+# - Arch: `sudo pacman -S mold clang`
+#
+# For now it dont increase compile time so much
+# but in future in can be useful!
+
+rustflags = [
+  # Mold linker
+  # "-Clink-arg=-fuse-ld=mold",
+  "-Clink-arg=-fuse-ld=lld",
+]
+
+rustdocflags = [
+  # Mold linker
+  # "-Clink-arg=-fuse-ld=mold",
+  "-Clink-arg=-fuse-ld=lld",
+  # Native cpu
+  "-Ctarget-cpu=native",
+]
+
+[target.x86_64-apple-darwin]
+rustflags = [
+  # LLD linker
+  #
+  # The default ld64 linker is faster, you should continue using it instead.
+  #
+  # You may need to install it:
+  #
+  # Brew: `brew install llvm`
+  # Manually: <https://lld.llvm.org/MachO/index.html>
+  "-Clink-arg=-fuse-ld=/usr/local/opt/llvm/bin/ld64.lld",
+]
+
+[target.aarch64-apple-darwin]
+rustflags = [
+  # LLD linker
+  #
+  # The default ld64 linker is faster, you should continue using it instead.
+  #
+  # You may need to install it:
+  #
+  # Brew: `brew install llvm`
+  # Manually: <https://lld.llvm.org/MachO/index.html>
+  "-Clink-arg=-fuse-ld=/opt/homebrew/opt/llvm/bin/ld64.lld",
+]
+
+[target.x86_64-pc-windows-msvc]
+# LLD linker
+#
+# You may need to install it:
+#
+# ```
+# cargo install -f cargo-binutils
+# rustup component add llvm-tools
+# ```
+linker = "rust-lld.exe"
+rustdocflags = ["-Clinker=rust-lld.exe"]

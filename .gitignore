@@ -10,7 +10,6 @@ profile.json.gz
 AGENTS.md
 .idea/
 .env
-.cargo/config.toml
 steel-flint/.cache
 /players
 *.gz
