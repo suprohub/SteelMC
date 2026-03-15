@@ -33,6 +33,17 @@
 #
 # For more information, please see Mold's repository at <https://github.com/rui314/mold>.
 #
+# # `target-cpu=native`
+#
+# You can add `-Ctarget-cpu=native` to tell rustc to generate code specifically for
+# your computer's CPU. This enables all instruction sets that your CPU supports
+# (like AVX, SSE4, etc.), which can significantly speed up certain computations.
+#
+# The trade‑off is that the resulting binary will **not** run on older or different
+# CPUs. Use this only for your own local builds, never for distributed binaries.
+#
+# To enable, uncomment the line in the `rustflags` section for your target below.
+#
 # # Nightly configuration
 #
 # Be warned that the following features require nightly Rust, which is experimental and may contain bugs. If you
@@ -78,6 +89,9 @@ rustflags = [
   # - Arch: `sudo pacman -S mold clang`
   # "-Clink-arg=-fuse-ld=mold",
 
+  # Native cpu
+  # "-Ctarget-cpu=native",
+
   # Nightly
   # "-Zshare-generics=y",
   # "-Zthreads=0",
@@ -87,6 +101,8 @@ rustflags = [
 rustdocflags = [
   # Mold linker
   # "-Clink-arg=-fuse-ld=mold",
+  # Native cpu
+  # "-Ctarget-cpu=native",
 ]
 
 [target.x86_64-apple-darwin]
@@ -100,6 +116,9 @@ rustflags = [
   # Brew: `brew install llvm`
   # Manually: <https://lld.llvm.org/MachO/index.html>
   # "-Clink-arg=-fuse-ld=/usr/local/opt/llvm/bin/ld64.lld",
+
+  # Native cpu
+  # "-Ctarget-cpu=native",
 
   # Nightly
   # "-Zshare-generics=y",
@@ -118,6 +137,9 @@ rustflags = [
   # Manually: <https://lld.llvm.org/MachO/index.html>
   # "-Clink-arg=-fuse-ld=/opt/homebrew/opt/llvm/bin/ld64.lld",
 
+  # Native cpu
+  # "-Ctarget-cpu=native",
+
   # Nightly
   # "-Zshare-generics=y",
   # "-Zthreads=0",
@@ -135,6 +157,9 @@ rustflags = [
 linker = "rust-lld.exe"
 rustdocflags = ["-Clinker=rust-lld.exe"]
 rustflags = [
+  # Native cpu
+  # "-Ctarget-cpu=native",
+  
   # Nightly
   # "-Zshare-generics=n", # This needs to be off if you use dynamic linking on Windows.
   # "-Zthreads=0",
