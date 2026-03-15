@@ -158,9 +158,31 @@ debug = 0
 #opt-level = 1
 
 [workspace.lints.rust]
+rust_2018_idioms = { level = "warn", priority = -1 }
+future_incompatible = { level = "warn", priority = -1 }
+nonstandard_style = { level = "warn", priority = -1 }
+elided_lifetimes_in_paths = "warn"
+rust_2021_prelude_collisions = "warn"
+semicolon_in_expressions_from_macros = "warn"
+trivial_numeric_casts = "warn"
+# `unsafe_op_in_unsafe_fn` may become the default in future Rust versions: https://github.com/rust-lang/rust/issues/71668
+unsafe_op_in_unsafe_fn = "warn"
+unused_extern_crates = "warn"
+unused_import_braces = "warn"
+unused_lifetimes = "warn"
+
+trivial_casts = "allow"
+unused_qualifications = "allow"
+
 missing_docs = "warn"
 
 [workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -2 }
+nursery = { level = "warn", priority = -2 }
+#cargo = { level = "warn", priority = 2 }
+unwrap_used = { level = "warn", priority = -3 }
+
 single_call_fn = "allow"
 multiple_inherent_impl = "allow"
 shadow_unrelated = "allow"
@@ -174,11 +196,50 @@ cast_possible_truncation = "allow"
 cast_precision_loss = "allow"
 absolute_paths = "warn"
 missing_const_for_fn = "warn"
+as_ptr_cast_mut = "warn"
+dbg_macro = "warn"
+default_union_representation = "warn"
+disallowed_script_idents = "warn"
+empty_enum_variants_with_brackets = "warn"
+exit = "warn"
+float_cmp_const = "warn"
+fn_to_numeric_cast_any = "warn"
+get_unwrap = "warn"
+imprecise_flops = "warn"
+infinite_loop = "warn"
+large_include_file = "warn"
+let_underscore_must_use = "warn"
+let_underscore_untyped = "warn"
+lossy_float_literal = "warn"
+map_err_ignore = "warn"
+mem_forget = "warn"
+mutex_integer = "warn"
+non_zero_suggestions = "warn"
+pathbuf_init_then_push = "warn"
+precedence_bits = "warn"
+print_stderr = "warn"
+print_stdout = "warn"
+pub_without_shorthand = "warn"
+rc_mutex = "warn"
+redundant_type_annotations = "warn"
+ref_patterns = "warn"
+rest_pat_in_fully_bound_structs = "warn"
+return_and_then = "warn"
+str_to_string = "warn"
+string_add = "warn"
+string_lit_as_bytes = "warn"
+string_lit_chars_any = "warn"
+suspicious_xor_used_as_pow = "warn"
+todo = "warn"
+undocumented_unsafe_blocks = "warn"
+unimplemented = "warn"
+unnecessary_safety_comment = "warn"
+unnecessary_safety_doc = "warn"
+unnecessary_self_imports = "warn"
+# unused_trait_names = "warn"
+verbose_file_reads = "warn"
 
-all = { level = "warn", priority = -1 }
-pedantic = { level = "warn", priority = -2 }
-#cargo = { level = "warn", priority = 2 }
-unwrap_used = { level = "warn", priority = -3 }
+cognitive_complexity = "warn"
 
 [profile.samply]
 inherits = "release"
