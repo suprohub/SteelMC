@@ -830,14 +830,7 @@ impl Player {
             drop(tp);
 
             let (yaw, pitch) = self.rotation.load();
-            self.send_packet(CPlayerPosition::absolute(
-                teleport_id,
-                pos.x,
-                pos.y,
-                pos.z,
-                yaw,
-                pitch,
-            ));
+            self.send_packet(CPlayerPosition::absolute(teleport_id, pos, yaw, pitch));
         }
         true // Still awaiting, reject movement
     }
@@ -935,7 +928,7 @@ impl Player {
 
                 if moved_dist_sq > 1.0 {
                     let (yaw, pitch) = self.rotation.load();
-                    self.teleport(start_pos.x, start_pos.y, start_pos.z, yaw, pitch);
+                    self.teleport(start_pos, yaw, pitch);
                     return;
                 }
             } else {
@@ -987,7 +980,7 @@ impl Player {
                 if !validation.is_valid {
                     // Teleport back to start position
                     let (yaw, pitch) = prev_rot;
-                    self.teleport(start_pos.x, start_pos.y, start_pos.z, yaw, pitch);
+                    self.teleport(start_pos, yaw, pitch);
                     return;
                 }
 
@@ -1071,12 +1064,8 @@ impl Player {
                         let delta = self.get_delta_movement();
                         let sync_packet = CEntityPositionSync {
                             entity_id: self.id,
-                            x: pos.x,
-                            y: pos.y,
-                            z: pos.z,
-                            velocity_x: delta.x,
-                            velocity_y: delta.y,
-                            velocity_z: delta.z,
+                            pos,
+                            vel: delta,
                             yaw,
                             pitch,
                             on_ground: packet.on_ground,
@@ -1107,12 +1096,8 @@ impl Player {
                     let delta = self.get_delta_movement();
                     let sync_packet = CEntityPositionSync {
                         entity_id: self.id,
-                        x: pos.x,
-                        y: pos.y,
-                        z: pos.z,
-                        velocity_x: delta.x,
-                        velocity_y: delta.y,
-                        velocity_z: delta.z,
+                        pos,
+                        vel: delta,
                         yaw,
                         pitch,
                         on_ground: packet.on_ground,
@@ -1778,9 +1763,7 @@ impl Player {
     /// Until acknowledged, movement packets from the client will be rejected.
     ///
     /// Matches vanilla `ServerGamePacketListenerImpl.teleport()`.
-    pub fn teleport(&self, x: f64, y: f64, z: f64, yaw: f32, pitch: f32) {
-        let pos = DVec3::new(x, y, z);
-
+    pub fn teleport(&self, pos: DVec3, yaw: f32, pitch: f32) {
         let new_id = {
             let mut tp = self.teleport_state.lock();
             tp.teleport_time = self.tick_count.load(Ordering::Relaxed);
@@ -1794,7 +1777,7 @@ impl Player {
         self.rotation.store((yaw, pitch));
 
         // Send the teleport packet with the new ID
-        self.send_packet(CPlayerPosition::absolute(new_id, x, y, z, yaw, pitch));
+        self.send_packet(CPlayerPosition::absolute(new_id, pos, yaw, pitch));
     }
 
     /// Handles a teleport acknowledgment from the client.
@@ -2729,7 +2712,7 @@ impl Player {
             mv.first_good_position = spawn;
         }
         self.rotation.store((0.0, 0.0));
-        self.teleport(spawn.x, spawn.y, spawn.z, 0.0, 0.0);
+        self.teleport(spawn, 0.0, 0.0);
 
         // TODO: send CSetDefaultSpawnPosition (dimension, pos, yaw, pitch)
 
@@ -2748,9 +2731,7 @@ impl Player {
             self.id,
             self.gameprofile.id,
             player_type_id,
-            spawn.x,
-            spawn.y,
-            spawn.z,
+            spawn,
             0.0,
             0.0,
         );

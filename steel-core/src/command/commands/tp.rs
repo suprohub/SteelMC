@@ -104,7 +104,7 @@ fn teleport_to_pos(
     }
 
     for player in targets {
-        player.teleport(pos.x, pos.y, pos.z, rotation.0, rotation.1);
+        player.teleport(pos, rotation.0, rotation.1);
     }
 
     if targets.len() == 1 {
@@ -152,7 +152,7 @@ fn teleport_to_player(
     let (yaw, pitch) = destination.rotation();
 
     for player in targets {
-        player.teleport(pos.x, pos.y, pos.z, yaw, pitch);
+        player.teleport(pos, yaw, pitch);
     }
 
     if targets.len() == 1 {

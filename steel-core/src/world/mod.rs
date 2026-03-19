@@ -1781,9 +1781,7 @@ impl World {
         let packet = CSound::new(
             sound_id,
             source,
-            f64::from(pos.x()) + 0.5,
-            f64::from(pos.y()) + 0.5,
-            f64::from(pos.z()) + 0.5,
+            pos.0.as_dvec3() + 0.5,
             volume,
             pitch,
             seed,

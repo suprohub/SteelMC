@@ -113,9 +113,7 @@ impl World {
                         existing_player.id,
                         existing_player.gameprofile.id,
                         player_type_id,
-                        existing_pos.x,
-                        existing_pos.y,
-                        existing_pos.z,
+                        existing_pos,
                         existing_yaw,
                         existing_pitch,
                     ));
@@ -140,9 +138,7 @@ impl World {
             player.id,
             player.gameprofile.id,
             player_type_id,
-            pos.x,
-            pos.y,
-            pos.z,
+            pos,
             yaw,
             pitch,
         );

@@ -550,12 +550,7 @@ impl ItemEntity {
 
         if should_sync {
             *self.last_sent_velocity.lock() = current;
-            Some(CSetEntityMotion::new(
-                self.id(),
-                current.x,
-                current.y,
-                current.z,
-            ))
+            Some(CSetEntityMotion::new(self.id(), current))
         } else {
             None
         }
@@ -620,12 +615,8 @@ impl ItemEntity {
             let (yaw, pitch) = self.rotation.load();
             Some(PositionSyncPacket::Full(CEntityPositionSync {
                 entity_id: self.id(),
-                x: current_pos.x,
-                y: current_pos.y,
-                z: current_pos.z,
-                velocity_x: vel.x,
-                velocity_y: vel.y,
-                velocity_z: vel.z,
+                pos: current_pos,
+                vel,
                 yaw,
                 pitch,
                 on_ground: current_on_ground,

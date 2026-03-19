@@ -1,3 +1,4 @@
+use glam::{DVec3, IVec3};
 use steel_macros::{ClientPacket, WriteTo};
 use steel_registry::packets::play::C_SOUND;
 
@@ -40,12 +41,8 @@ pub struct CSound {
     /// The sound source category (VarInt).
     #[write(as = VarInt)]
     pub source: i32,
-    /// X position multiplied by 8 (fixed-point).
-    pub x: i32,
-    /// Y position multiplied by 8 (fixed-point).
-    pub y: i32,
-    /// Z position multiplied by 8 (fixed-point).
-    pub z: i32,
+    /// Position multiplied by 8 (fixed-point).
+    pub pos: IVec3,
     /// Volume (1.0 = normal).
     pub volume: f32,
     /// Pitch (1.0 = normal).
@@ -69,9 +66,7 @@ impl CSound {
     pub fn new(
         sound_id: i32,
         source: SoundSource,
-        x: f64,
-        y: f64,
-        z: f64,
+        pos: DVec3,
         volume: f32,
         pitch: f32,
         seed: i64,
@@ -79,9 +74,7 @@ impl CSound {
         Self {
             sound_id,
             source: source.as_varint(),
-            x: (x * 8.0) as i32,
-            y: (y * 8.0) as i32,
-            z: (z * 8.0) as i32,
+            pos: (pos * 8.0).as_ivec3(),
             volume,
             pitch,
             seed,
@@ -107,9 +100,7 @@ impl CSound {
         Self::new(
             sound_id,
             SoundSource::Blocks,
-            f64::from(pos.x()) + 0.5,
-            f64::from(pos.y()) + 0.5,
-            f64::from(pos.z()) + 0.5,
+            pos.0.as_dvec3() + 0.5,
             volume,
             pitch,
             seed,
