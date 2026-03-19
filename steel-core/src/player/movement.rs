@@ -9,7 +9,6 @@ use glam::DVec3;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::shapes::AABBd;
 use steel_registry::vanilla_entities;
-use steel_utils::BlockPos;
 
 use crate::physics::{
     CollisionWorld, EntityPhysicsState, MoverType, WorldCollisionProvider, join_is_not_empty,
@@ -52,7 +51,7 @@ pub const IMPULSE_GRACE_TICKS: i32 = 20;
 /// Creates a player bounding box at the given position.
 #[must_use]
 pub fn make_player_aabb(pos: DVec3) -> AABBd {
-    AABBd::entity_box(pos.x, pos.y, pos.z, PLAYER_WIDTH / 2.0, PLAYER_HEIGHT)
+    AABBd::entity_box(pos, PLAYER_WIDTH / 2.0, PLAYER_HEIGHT)
 }
 
 /// Creates a player bounding box at the given position, deflated by the collision epsilon.
@@ -148,26 +147,14 @@ pub fn simulate_move(
 pub fn is_in_collision(world: &Arc<World>, pos: DVec3) -> bool {
     let aabb = make_player_aabb_deflated(pos);
 
-    let min_x = aabb.min_x.floor() as i32;
-    let max_x = aabb.max_x.ceil() as i32;
-    let min_y = aabb.min_y.floor() as i32;
-    let max_y = aabb.max_y.ceil() as i32;
-    let min_z = aabb.min_z.floor() as i32;
-    let max_z = aabb.max_z.ceil() as i32;
+    for block_pos in AABBd::new(aabb.min, aabb.max.ceil()).blocks() {
+        let block_state = world.get_block_state(block_pos);
+        let collision_shape = block_state.get_collision_shape();
 
-    for bx in min_x..max_x {
-        for by in min_y..max_y {
-            for bz in min_z..max_z {
-                let block_pos = BlockPos::new(bx, by, bz);
-                let block_state = world.get_block_state(block_pos);
-                let collision_shape = block_state.get_collision_shape();
-
-                for block_aabb in collision_shape {
-                    let world_aabb = block_aabb.at_block(bx, by, bz);
-                    if aabb.intersects_block_aabb(&world_aabb) {
-                        return true;
-                    }
-                }
+        for block_aabb in collision_shape {
+            let world_aabb = block_aabb.at_block(block_pos.0);
+            if aabb.intersects_block_aabb(&world_aabb) {
+                return true;
             }
         }
     }
@@ -390,11 +377,11 @@ mod tests {
         let pos = DVec3::new(0.0, 64.0, 0.0);
         let aabb = make_player_aabb(pos);
 
-        assert!((aabb.min_x - (-0.3)).abs() < 0.001);
-        assert!((aabb.max_x - 0.3).abs() < 0.001);
-        assert!((aabb.min_y - 64.0).abs() < 0.001);
-        assert!((aabb.max_y - 65.8).abs() < 0.001);
-        assert!((aabb.min_z - (-0.3)).abs() < 0.001);
-        assert!((aabb.max_z - 0.3).abs() < 0.001);
+        assert!((aabb.min.x - (-0.3)).abs() < 0.001);
+        assert!((aabb.max.x - 0.3).abs() < 0.001);
+        assert!((aabb.min.y - 64.0).abs() < 0.001);
+        assert!((aabb.max.y - 65.8).abs() < 0.001);
+        assert!((aabb.min.z - (-0.3)).abs() < 0.001);
+        assert!((aabb.max.z - 0.3).abs() < 0.001);
     }
 }

@@ -4,63 +4,62 @@
 /// Values can extend beyond 0.0-1.0 for blocks like fences (collision height 1.5).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct AABB {
-    pub min_x: f32,
-    pub min_y: f32,
-    pub min_z: f32,
-    pub max_x: f32,
-    pub max_y: f32,
-    pub max_z: f32,
+    pub min: Vec3,
+    pub max: Vec3,
 }
 
 impl AABB {
     /// Creates a new AABB from min and max coordinates.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `debug_assertions` are enabled and `min` is not less than or
+    /// equal to `max` componentwise.
     #[must_use]
-    pub const fn new(
-        min_x: f32,
-        min_y: f32,
-        min_z: f32,
-        max_x: f32,
-        max_y: f32,
-        max_z: f32,
-    ) -> Self {
-        Self {
-            min_x,
-            min_y,
-            min_z,
-            max_x,
-            max_y,
-            max_z,
-        }
+    pub fn new(min: Vec3, max: Vec3) -> Self {
+        debug_assert!(
+            min.x <= max.x && min.y <= max.y && min.z <= max.z,
+            "`min` must be less than or equal to `max` componentwise (min = {min}, max = {max})"
+        );
+
+        Self { min, max }
+    }
+
+    // TODO: remove when the assertion in `new` can be done in a `const` context.
+    #[doc(hidden)]
+    pub const fn new_unchecked(min: Vec3, max: Vec3) -> Self {
+        Self { min, max }
     }
 
     /// A full block (0,0,0) to (1,1,1).
-    pub const FULL_BLOCK: AABB = AABB::new(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
+    pub const FULL_BLOCK: AABB = AABB::new_unchecked(Vec3::ZERO, Vec3::ONE);
 
     /// An empty shape (no collision).
-    pub const EMPTY: AABB = AABB::new(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    #[doc(alias = "ZERO")]
+    pub const EMPTY: AABB = AABB::new_unchecked(Vec3::ZERO, Vec3::ZERO);
 
     /// Returns true if this AABB has no volume.
     #[must_use]
     pub const fn is_empty(&self) -> bool {
-        self.min_x >= self.max_x || self.min_y >= self.max_y || self.min_z >= self.max_z
+        self.min.x >= self.max.x || self.min.y >= self.max.y || self.min.z >= self.max.z
     }
 
     /// Returns the width (X dimension) of this AABB.
     #[must_use]
     pub fn width(&self) -> f32 {
-        self.max_x - self.min_x
+        self.max.x - self.min.x
     }
 
     /// Returns the height (Y dimension) of this AABB.
     #[must_use]
     pub fn height(&self) -> f32 {
-        self.max_y - self.min_y
+        self.max.y - self.min.y
     }
 
     /// Returns the depth (Z dimension) of this AABB.
     #[must_use]
     pub fn depth(&self) -> f32 {
-        self.max_z - self.min_z
+        self.max.z - self.min.z
     }
 
     /// Returns the average dimension size of this AABB.
@@ -78,12 +77,8 @@ impl AABB {
     #[must_use]
     pub fn deflate(&self, amount: f32) -> Self {
         Self {
-            min_x: self.min_x + amount,
-            min_y: self.min_y + amount,
-            min_z: self.min_z + amount,
-            max_x: self.max_x - amount,
-            max_y: self.max_y - amount,
-            max_z: self.max_z - amount,
+            min: self.min + amount,
+            max: self.max - amount,
         }
     }
 
@@ -93,12 +88,8 @@ impl AABB {
     #[must_use]
     pub fn inflate(&self, amount: f32) -> Self {
         Self {
-            min_x: self.min_x - amount,
-            min_y: self.min_y - amount,
-            min_z: self.min_z - amount,
-            max_x: self.max_x + amount,
-            max_y: self.max_y + amount,
-            max_z: self.max_z + amount,
+            min: self.min - amount,
+            max: self.max - amount,
         }
     }
 
@@ -106,14 +97,10 @@ impl AABB {
     ///
     /// Matches vanilla `AABB.move()`.
     #[must_use]
-    pub fn translate(&self, dx: f32, dy: f32, dz: f32) -> Self {
+    pub fn translate(&self, d: Vec3) -> Self {
         Self {
-            min_x: self.min_x + dx,
-            min_y: self.min_y + dy,
-            min_z: self.min_z + dz,
-            max_x: self.max_x + dx,
-            max_y: self.max_y + dy,
-            max_z: self.max_z + dz,
+            min: self.min + d,
+            max: self.max + d,
         }
     }
 
@@ -121,17 +108,11 @@ impl AABB {
     ///
     /// Converts a block-local AABB (0-1 space) to world coordinates.
     #[must_use]
-    pub fn at_block(&self, block_x: i32, block_y: i32, block_z: i32) -> Self {
-        let bx = block_x as f32;
-        let by = block_y as f32;
-        let bz = block_z as f32;
+    pub fn at_block(&self, pos: IVec3) -> Self {
+        let pos = pos.as_vec3();
         Self {
-            min_x: bx + self.min_x,
-            min_y: by + self.min_y,
-            min_z: bz + self.min_z,
-            max_x: bx + self.max_x,
-            max_y: by + self.max_y,
-            max_z: bz + self.max_z,
+            min: self.min + pos,
+            max: self.max + pos,
         }
     }
 
@@ -141,23 +122,23 @@ impl AABB {
     /// Matches vanilla `AABB.intersects()`.
     #[must_use]
     pub fn intersects(&self, other: &Self) -> bool {
-        self.max_x > other.min_x
-            && self.min_x < other.max_x
-            && self.max_y > other.min_y
-            && self.min_y < other.max_y
-            && self.max_z > other.min_z
-            && self.min_z < other.max_z
+        self.max.x > other.min.x
+            && self.min.x < other.max.x
+            && self.max.y > other.min.y
+            && self.min.y < other.max.y
+            && self.max.z > other.min.z
+            && self.min.z < other.max.z
     }
 
     /// Checks if this AABB contains the given point.
     #[must_use]
     pub fn contains(&self, x: f32, y: f32, z: f32) -> bool {
-        x >= self.min_x
-            && x <= self.max_x
-            && y >= self.min_y
-            && y <= self.max_y
-            && z >= self.min_z
-            && z <= self.max_z
+        x >= self.min.x
+            && x <= self.max.x
+            && y >= self.min.y
+            && y <= self.max.y
+            && z >= self.min.z
+            && z <= self.max.z
     }
 }
 
@@ -166,33 +147,15 @@ impl AABB {
 /// Coordinates are in world space. Used for player and entity bounding boxes.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct AABBd {
-    pub min_x: f64,
-    pub min_y: f64,
-    pub min_z: f64,
-    pub max_x: f64,
-    pub max_y: f64,
-    pub max_z: f64,
+    pub min: DVec3,
+    pub max: DVec3,
 }
 
 impl AABBd {
     /// Creates a new double-precision AABB from min and max coordinates.
     #[must_use]
-    pub const fn new(
-        min_x: f64,
-        min_y: f64,
-        min_z: f64,
-        max_x: f64,
-        max_y: f64,
-        max_z: f64,
-    ) -> Self {
-        Self {
-            min_x,
-            min_y,
-            min_z,
-            max_x,
-            max_y,
-            max_z,
-        }
+    pub const fn new(min: DVec3, max: DVec3) -> Self {
+        Self { min, max }
     }
 
     /// Creates an entity bounding box centered at the given position.
@@ -200,14 +163,10 @@ impl AABBd {
     /// The box extends `half_width` in X and Z directions,
     /// and from `y` to `y + height` in the Y direction.
     #[must_use]
-    pub fn entity_box(x: f64, y: f64, z: f64, half_width: f64, height: f64) -> Self {
+    pub fn entity_box(pos: DVec3, half_width: f64, height: f64) -> Self {
         Self {
-            min_x: x - half_width,
-            min_y: y,
-            min_z: z - half_width,
-            max_x: x + half_width,
-            max_y: y + height,
-            max_z: z + half_width,
+            min: pos + DVec3::new(-half_width, 0.0, -half_width),
+            max: pos + DVec3::new(half_width, height, half_width),
         }
     }
 
@@ -218,12 +177,8 @@ impl AABBd {
     #[must_use]
     pub fn deflate(&self, amount: f64) -> Self {
         Self {
-            min_x: self.min_x + amount,
-            min_y: self.min_y + amount,
-            min_z: self.min_z + amount,
-            max_x: self.max_x - amount,
-            max_y: self.max_y - amount,
-            max_z: self.max_z - amount,
+            min: self.min + amount,
+            max: self.max - amount,
         }
     }
 
@@ -231,48 +186,159 @@ impl AABBd {
     #[must_use]
     pub fn inflate(&self, amount: f64) -> Self {
         Self {
-            min_x: self.min_x - amount,
-            min_y: self.min_y - amount,
-            min_z: self.min_z - amount,
-            max_x: self.max_x + amount,
-            max_y: self.max_y + amount,
-            max_z: self.max_z + amount,
+            min: self.min - amount,
+            max: self.max + amount,
         }
     }
 
     /// Returns a new AABB inflated by different amounts on each axis.
     #[must_use]
-    pub fn inflate_xyz(&self, x: f64, y: f64, z: f64) -> Self {
+    pub fn inflate_xyz(&self, amount: DVec3) -> Self {
         Self {
-            min_x: self.min_x - x,
-            min_y: self.min_y - y,
-            min_z: self.min_z - z,
-            max_x: self.max_x + x,
-            max_y: self.max_y + y,
-            max_z: self.max_z + z,
+            min: self.min - amount,
+            max: self.max + amount,
         }
     }
 
     /// Checks if this AABB intersects with another AABB.
     #[must_use]
     pub fn intersects(&self, other: &Self) -> bool {
-        self.max_x > other.min_x
-            && self.min_x < other.max_x
-            && self.max_y > other.min_y
-            && self.min_y < other.max_y
-            && self.max_z > other.min_z
-            && self.min_z < other.max_z
+        self.max.x > other.min.x
+            && self.min.x < other.max.x
+            && self.max.y > other.min.y
+            && self.min.y < other.max.y
+            && self.max.z > other.min.z
+            && self.min.z < other.max.z
     }
 
     /// Checks if this AABB intersects with a single-precision block AABB.
     #[must_use]
     pub fn intersects_block_aabb(&self, other: &AABB) -> bool {
-        self.max_x > f64::from(other.min_x)
-            && self.min_x < f64::from(other.max_x)
-            && self.max_y > f64::from(other.min_y)
-            && self.min_y < f64::from(other.max_y)
-            && self.max_z > f64::from(other.min_z)
-            && self.min_z < f64::from(other.max_z)
+        self.max.x > f64::from(other.min.x)
+            && self.min.x < f64::from(other.max.x)
+            && self.max.y > f64::from(other.min.y)
+            && self.min.y < f64::from(other.max.y)
+            && self.max.z > f64::from(other.min.z)
+            && self.min.z < f64::from(other.max.z)
+    }
+}
+
+// Iterator over block positions intersected by an AABB (f32).
+pub struct AABBBlockIter {
+    current: IVec3,
+    min: IVec3,
+    max: IVec3,
+}
+
+impl AABBBlockIter {
+    fn new(aabb: &AABB) -> Self {
+        let min = aabb.min.as_ivec3();
+        Self {
+            current: min,
+            min,
+            max: aabb.max.as_ivec3(),
+        }
+    }
+}
+
+impl Iterator for AABBBlockIter {
+    type Item = BlockPos;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // If the range is empty (any min > max), yield nothing.
+        if self.min.x > self.max.x || self.min.y > self.max.y || self.min.z > self.max.z {
+            return None;
+        }
+
+        // If we've already passed the last z coordinate, iteration is done.
+        if self.current.z > self.max.z {
+            return None;
+        }
+
+        let pos = BlockPos(self.current);
+
+        // Advance to the next position (x fastest, then y, then z).
+        if self.current.x < self.max.x {
+            self.current.x += 1;
+        } else {
+            self.current.x = self.min.x;
+            if self.current.y < self.max.y {
+                self.current.y += 1;
+            } else {
+                self.current.y = self.min.y;
+                self.current.z += 1;
+            }
+        }
+
+        Some(pos)
+    }
+}
+
+impl AABB {
+    /// Returns an iterator over all integer block positions that this AABB overlaps.
+    ///
+    /// The iteration order matches nested loops over x, y, z with the fastest varying x.
+    /// The conversion from f32 to i32 uses `as i32` (truncation toward zero) to match
+    /// the original `check_inside_blocks` implementation.
+    pub fn blocks(&self) -> AABBBlockIter {
+        AABBBlockIter::new(self)
+    }
+}
+
+/// Iterator over block positions intersected by an AABBd (f64).
+pub struct AABBdBlockIter {
+    current: IVec3,
+    min: IVec3,
+    max: IVec3,
+}
+
+impl AABBdBlockIter {
+    fn new(aabb: &AABBd) -> Self {
+        let min = aabb.min.as_ivec3();
+        Self {
+            current: min,
+            min,
+            max: aabb.max.as_ivec3(),
+        }
+    }
+}
+
+impl Iterator for AABBdBlockIter {
+    type Item = BlockPos;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.min.x > self.max.x || self.min.y > self.max.y || self.min.z > self.max.z {
+            return None;
+        }
+        if self.current.z > self.max.z {
+            return None;
+        }
+
+        let pos = BlockPos(self.current);
+
+        if self.current.x < self.max.x {
+            self.current.x += 1;
+        } else {
+            self.current.x = self.min.x;
+            if self.current.y < self.max.y {
+                self.current.y += 1;
+            } else {
+                self.current.y = self.min.y;
+                self.current.z += 1;
+            }
+        }
+
+        Some(pos)
+    }
+}
+
+impl AABBd {
+    /// Returns an iterator over all integer block positions that this double-precision AABB overlaps.
+    ///
+    /// The conversion from f64 to i32 uses `as i32` (truncation toward zero) to match
+    /// the original `check_inside_blocks` implementation.
+    pub fn blocks(&self) -> AABBdBlockIter {
+        AABBdBlockIter::new(self)
     }
 }
 
@@ -399,6 +465,9 @@ impl BlockShapes {
     pub const EMPTY: BlockShapes = BlockShapes::new(&[], &[]);
 }
 
+use glam::{DVec3, IVec3, Vec3};
+use steel_utils::types::BlockPos;
+
 use super::properties::Direction;
 
 /// Returns the overall bounding box of a voxel shape (union of all AABBs).
@@ -409,23 +478,23 @@ pub fn bounding_box(shape: VoxelShape) -> AABB {
     debug_assert!(!shape.is_empty(), "bounding_box called on empty shape");
     let mut result = shape[0];
     for aabb in &shape[1..] {
-        if aabb.min_x < result.min_x {
-            result.min_x = aabb.min_x;
+        if aabb.min.x < result.min.x {
+            result.min.x = aabb.min.x;
         }
-        if aabb.min_y < result.min_y {
-            result.min_y = aabb.min_y;
+        if aabb.min.y < result.min.y {
+            result.min.y = aabb.min.y;
         }
-        if aabb.min_z < result.min_z {
-            result.min_z = aabb.min_z;
+        if aabb.min.z < result.min.z {
+            result.min.z = aabb.min.z;
         }
-        if aabb.max_x > result.max_x {
-            result.max_x = aabb.max_x;
+        if aabb.max.x > result.max.x {
+            result.max.x = aabb.max.x;
         }
-        if aabb.max_y > result.max_y {
-            result.max_y = aabb.max_y;
+        if aabb.max.y > result.max.y {
+            result.max.y = aabb.max.y;
         }
-        if aabb.max_z > result.max_z {
-            result.max_z = aabb.max_z;
+        if aabb.max.z > result.max.z {
+            result.max.z = aabb.max.z;
         }
     }
     result
@@ -446,12 +515,12 @@ pub fn is_shape_full_block(shape: VoxelShape) -> bool {
     }
 
     let aabb = &shape[0];
-    aabb.min_x <= 0.0
-        && aabb.max_x >= 1.0
-        && aabb.min_y <= 0.0
-        && aabb.max_y >= 1.0
-        && aabb.min_z <= 0.0
-        && aabb.max_z >= 1.0
+    aabb.min.x <= 0.0
+        && aabb.max.x >= 1.0
+        && aabb.min.y <= 0.0
+        && aabb.max.y >= 1.0
+        && aabb.min.z <= 0.0
+        && aabb.max.z >= 1.0
 }
 
 /// Support type for `is_face_sturdy` checks.
@@ -491,12 +560,12 @@ pub fn is_face_full(shape: VoxelShape, direction: Direction) -> bool {
     // For a face to be "full", the shape's projection onto that face must cover 0.0-1.0
     // on both axes perpendicular to the direction.
     match direction {
-        Direction::Down => covers_face_xy(shape, |aabb| aabb.min_y <= 0.0),
-        Direction::Up => covers_face_xy(shape, |aabb| aabb.max_y >= 1.0),
-        Direction::North => covers_face_xy_for_z(shape, |aabb| aabb.min_z <= 0.0),
-        Direction::South => covers_face_xy_for_z(shape, |aabb| aabb.max_z >= 1.0),
-        Direction::West => covers_face_yz(shape, |aabb| aabb.min_x <= 0.0),
-        Direction::East => covers_face_yz(shape, |aabb| aabb.max_x >= 1.0),
+        Direction::Down => covers_face_xy(shape, |aabb| aabb.min.y <= 0.0),
+        Direction::Up => covers_face_xy(shape, |aabb| aabb.max.y >= 1.0),
+        Direction::North => covers_face_xy_for_z(shape, |aabb| aabb.min.z <= 0.0),
+        Direction::South => covers_face_xy_for_z(shape, |aabb| aabb.max.z >= 1.0),
+        Direction::West => covers_face_yz(shape, |aabb| aabb.min.x <= 0.0),
+        Direction::East => covers_face_yz(shape, |aabb| aabb.max.x >= 1.0),
     }
 }
 
@@ -512,46 +581,46 @@ pub fn is_face_center_supported(shape: VoxelShape, direction: Direction) -> bool
     // Check if any AABB in the shape covers the center region on the given face
     match direction {
         Direction::Down => shape.iter().any(|aabb| {
-            aabb.min_y <= 0.0
-                && aabb.min_x <= CENTER_SUPPORT_MIN
-                && aabb.max_x >= CENTER_SUPPORT_MAX
-                && aabb.min_z <= CENTER_SUPPORT_MIN
-                && aabb.max_z >= CENTER_SUPPORT_MAX
+            aabb.min.y <= 0.0
+                && aabb.min.x <= CENTER_SUPPORT_MIN
+                && aabb.max.x >= CENTER_SUPPORT_MAX
+                && aabb.min.z <= CENTER_SUPPORT_MIN
+                && aabb.max.z >= CENTER_SUPPORT_MAX
         }),
         Direction::Up => shape.iter().any(|aabb| {
-            aabb.max_y >= 1.0
-                && aabb.min_x <= CENTER_SUPPORT_MIN
-                && aabb.max_x >= CENTER_SUPPORT_MAX
-                && aabb.min_z <= CENTER_SUPPORT_MIN
-                && aabb.max_z >= CENTER_SUPPORT_MAX
+            aabb.max.y >= 1.0
+                && aabb.min.x <= CENTER_SUPPORT_MIN
+                && aabb.max.x >= CENTER_SUPPORT_MAX
+                && aabb.min.z <= CENTER_SUPPORT_MIN
+                && aabb.max.z >= CENTER_SUPPORT_MAX
         }),
         Direction::North => shape.iter().any(|aabb| {
-            aabb.min_z <= 0.0
-                && aabb.min_x <= CENTER_SUPPORT_MIN
-                && aabb.max_x >= CENTER_SUPPORT_MAX
-                && aabb.min_y <= CENTER_SUPPORT_MIN
-                && aabb.max_y >= CENTER_SUPPORT_MAX
+            aabb.min.z <= 0.0
+                && aabb.min.x <= CENTER_SUPPORT_MIN
+                && aabb.max.x >= CENTER_SUPPORT_MAX
+                && aabb.min.y <= CENTER_SUPPORT_MIN
+                && aabb.max.y >= CENTER_SUPPORT_MAX
         }),
         Direction::South => shape.iter().any(|aabb| {
-            aabb.max_z >= 1.0
-                && aabb.min_x <= CENTER_SUPPORT_MIN
-                && aabb.max_x >= CENTER_SUPPORT_MAX
-                && aabb.min_y <= CENTER_SUPPORT_MIN
-                && aabb.max_y >= CENTER_SUPPORT_MAX
+            aabb.max.z >= 1.0
+                && aabb.min.x <= CENTER_SUPPORT_MIN
+                && aabb.max.x >= CENTER_SUPPORT_MAX
+                && aabb.min.y <= CENTER_SUPPORT_MIN
+                && aabb.max.y >= CENTER_SUPPORT_MAX
         }),
         Direction::West => shape.iter().any(|aabb| {
-            aabb.min_x <= 0.0
-                && aabb.min_y <= CENTER_SUPPORT_MIN
-                && aabb.max_y >= CENTER_SUPPORT_MAX
-                && aabb.min_z <= CENTER_SUPPORT_MIN
-                && aabb.max_z >= CENTER_SUPPORT_MAX
+            aabb.min.x <= 0.0
+                && aabb.min.y <= CENTER_SUPPORT_MIN
+                && aabb.max.y >= CENTER_SUPPORT_MAX
+                && aabb.min.z <= CENTER_SUPPORT_MIN
+                && aabb.max.z >= CENTER_SUPPORT_MAX
         }),
         Direction::East => shape.iter().any(|aabb| {
-            aabb.max_x >= 1.0
-                && aabb.min_y <= CENTER_SUPPORT_MIN
-                && aabb.max_y >= CENTER_SUPPORT_MAX
-                && aabb.min_z <= CENTER_SUPPORT_MIN
-                && aabb.max_z >= CENTER_SUPPORT_MAX
+            aabb.max.x >= 1.0
+                && aabb.min.y <= CENTER_SUPPORT_MIN
+                && aabb.max.y >= CENTER_SUPPORT_MAX
+                && aabb.min.z <= CENTER_SUPPORT_MIN
+                && aabb.max.z >= CENTER_SUPPORT_MAX
         }),
     }
 }
@@ -571,46 +640,46 @@ pub fn is_face_rigid_supported(shape: VoxelShape, direction: Direction) -> bool 
 
     match direction {
         Direction::Down => shape.iter().any(|aabb| {
-            aabb.min_y <= 0.0
-                && aabb.min_x <= min_bound
-                && aabb.max_x >= max_bound
-                && aabb.min_z <= min_bound
-                && aabb.max_z >= max_bound
+            aabb.min.y <= 0.0
+                && aabb.min.x <= min_bound
+                && aabb.max.x >= max_bound
+                && aabb.min.z <= min_bound
+                && aabb.max.z >= max_bound
         }),
         Direction::Up => shape.iter().any(|aabb| {
-            aabb.max_y >= 1.0
-                && aabb.min_x <= min_bound
-                && aabb.max_x >= max_bound
-                && aabb.min_z <= min_bound
-                && aabb.max_z >= max_bound
+            aabb.max.y >= 1.0
+                && aabb.min.x <= min_bound
+                && aabb.max.x >= max_bound
+                && aabb.min.z <= min_bound
+                && aabb.max.z >= max_bound
         }),
         Direction::North => shape.iter().any(|aabb| {
-            aabb.min_z <= 0.0
-                && aabb.min_x <= min_bound
-                && aabb.max_x >= max_bound
-                && aabb.min_y <= min_bound
-                && aabb.max_y >= max_bound
+            aabb.min.z <= 0.0
+                && aabb.min.x <= min_bound
+                && aabb.max.x >= max_bound
+                && aabb.min.y <= min_bound
+                && aabb.max.y >= max_bound
         }),
         Direction::South => shape.iter().any(|aabb| {
-            aabb.max_z >= 1.0
-                && aabb.min_x <= min_bound
-                && aabb.max_x >= max_bound
-                && aabb.min_y <= min_bound
-                && aabb.max_y >= max_bound
+            aabb.max.z >= 1.0
+                && aabb.min.x <= min_bound
+                && aabb.max.x >= max_bound
+                && aabb.min.y <= min_bound
+                && aabb.max.y >= max_bound
         }),
         Direction::West => shape.iter().any(|aabb| {
-            aabb.min_x <= 0.0
-                && aabb.min_y <= min_bound
-                && aabb.max_y >= max_bound
-                && aabb.min_z <= min_bound
-                && aabb.max_z >= max_bound
+            aabb.min.x <= 0.0
+                && aabb.min.y <= min_bound
+                && aabb.max.y >= max_bound
+                && aabb.min.z <= min_bound
+                && aabb.max.z >= max_bound
         }),
         Direction::East => shape.iter().any(|aabb| {
-            aabb.max_x >= 1.0
-                && aabb.min_y <= min_bound
-                && aabb.max_y >= max_bound
-                && aabb.min_z <= min_bound
-                && aabb.max_z >= max_bound
+            aabb.max.x >= 1.0
+                && aabb.min.y <= min_bound
+                && aabb.max.y >= max_bound
+                && aabb.min.z <= min_bound
+                && aabb.max.z >= max_bound
         }),
     }
 }
@@ -630,10 +699,10 @@ fn covers_face_xy(shape: VoxelShape, face_check: impl Fn(&AABB) -> bool) -> bool
     // Simple check: if there's a single AABB that covers 0-1 on X and Z and touches the face
     shape.iter().any(|aabb| {
         face_check(aabb)
-            && aabb.min_x <= 0.0
-            && aabb.max_x >= 1.0
-            && aabb.min_z <= 0.0
-            && aabb.max_z >= 1.0
+            && aabb.min.x <= 0.0
+            && aabb.max.x >= 1.0
+            && aabb.min.z <= 0.0
+            && aabb.max.z >= 1.0
     })
 }
 
@@ -641,10 +710,10 @@ fn covers_face_xy(shape: VoxelShape, face_check: impl Fn(&AABB) -> bool) -> bool
 fn covers_face_xy_for_z(shape: VoxelShape, face_check: impl Fn(&AABB) -> bool) -> bool {
     shape.iter().any(|aabb| {
         face_check(aabb)
-            && aabb.min_x <= 0.0
-            && aabb.max_x >= 1.0
-            && aabb.min_y <= 0.0
-            && aabb.max_y >= 1.0
+            && aabb.min.x <= 0.0
+            && aabb.max.x >= 1.0
+            && aabb.min.y <= 0.0
+            && aabb.max.y >= 1.0
     })
 }
 
@@ -652,9 +721,9 @@ fn covers_face_xy_for_z(shape: VoxelShape, face_check: impl Fn(&AABB) -> bool) -
 fn covers_face_yz(shape: VoxelShape, face_check: impl Fn(&AABB) -> bool) -> bool {
     shape.iter().any(|aabb| {
         face_check(aabb)
-            && aabb.min_y <= 0.0
-            && aabb.max_y >= 1.0
-            && aabb.min_z <= 0.0
-            && aabb.max_z >= 1.0
+            && aabb.min.y <= 0.0
+            && aabb.max.y >= 1.0
+            && aabb.min.z <= 0.0
+            && aabb.max.z >= 1.0
     })
 }

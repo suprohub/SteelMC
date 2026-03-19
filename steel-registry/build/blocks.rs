@@ -461,7 +461,7 @@ pub(crate) fn build() -> TokenStream {
             let max_y = shape.max[1];
             let max_z = shape.max[2];
             quote! {
-                static #name: AABB = AABB::new(#min_x, #min_y, #min_z, #max_x, #max_y, #max_z);
+                static #name: AABB = AABB::new_unchecked(Vec3::new(#min_x, #min_y, #min_z), Vec3::new(#max_x, #max_y, #max_z));
             }
         })
         .collect();
@@ -601,6 +601,8 @@ pub(crate) fn build() -> TokenStream {
             blocks::shapes::AABB,
         };
         use steel_utils::Identifier;
+
+        use glam::Vec3;
 
         // AABB primitives
         #(#aabb_consts)*

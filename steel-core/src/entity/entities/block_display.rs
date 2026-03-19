@@ -88,14 +88,7 @@ impl Entity for BlockDisplayEntity {
     fn bounding_box(&self) -> AABBd {
         // Display entities have zero-size bounding boxes (no collision)
         let pos = self.position();
-        AABBd {
-            min_x: pos.x,
-            min_y: pos.y,
-            min_z: pos.z,
-            max_x: pos.x,
-            max_y: pos.y,
-            max_z: pos.z,
-        }
+        AABBd { min: pos, max: pos }
     }
 
     fn pack_dirty_entity_data(&self) -> Option<Vec<DataValue>> {

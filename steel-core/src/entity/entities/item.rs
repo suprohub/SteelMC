@@ -504,7 +504,7 @@ impl ItemEntity {
         }
 
         // Search area: 0.5 blocks horizontal, 0 vertical (vanilla uses inflate(0.5, 0.0, 0.5))
-        let search_box = self.bounding_box().inflate_xyz(0.5, 0.0, 0.5);
+        let search_box = self.bounding_box().inflate_xyz(DVec3::new(0.5, 0.0, 0.5));
 
         // Get all entities in the search area
         for entity in world.get_entities_in_aabb(&search_box) {
@@ -663,28 +663,16 @@ impl ItemEntity {
 
         let aabb = self.bounding_box().deflate(1.0E-5);
 
-        let min_x = aabb.min_x.floor() as i32;
-        let min_y = aabb.min_y.floor() as i32;
-        let min_z = aabb.min_z.floor() as i32;
-        let max_x = aabb.max_x.floor() as i32;
-        let max_y = aabb.max_y.floor() as i32;
-        let max_z = aabb.max_z.floor() as i32;
-
-        for x in min_x..=max_x {
-            for y in min_y..=max_y {
-                for z in min_z..=max_z {
-                    let pos = steel_utils::BlockPos::new(x, y, z);
-                    let state = world.get_block_state(pos);
-                    if state.is_air() {
-                        continue;
-                    }
-                    let block = state.get_block();
-                    let behavior = BLOCK_BEHAVIORS.get_behavior(block);
-                    behavior.entity_inside(state, &world, pos, self);
-                    if self.is_removed() {
-                        return;
-                    }
-                }
+        for pos in aabb.blocks() {
+            let state = world.get_block_state(pos);
+            if state.is_air() {
+                continue;
+            }
+            let block = state.get_block();
+            let behavior = BLOCK_BEHAVIORS.get_behavior(block);
+            behavior.entity_inside(state, &world, pos, self);
+            if self.is_removed() {
+                return;
             }
         }
     }
@@ -708,18 +696,12 @@ impl Entity for ItemEntity {
     }
 
     fn bounding_box(&self) -> AABBd {
-        let pos = self.position();
         let dims = self.entity_type().dimensions;
-        let half_width = f64::from(dims.width) / 2.0;
-        let height = f64::from(dims.height);
-        AABBd {
-            min_x: pos.x - half_width,
-            min_y: pos.y,
-            min_z: pos.z - half_width,
-            max_x: pos.x + half_width,
-            max_y: pos.y + height,
-            max_z: pos.z + half_width,
-        }
+        AABBd::entity_box(
+            self.position(),
+            f64::from(dims.width) / 2.0,
+            f64::from(dims.height),
+        )
     }
 
     fn tick(&self) {

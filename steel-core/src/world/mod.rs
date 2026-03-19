@@ -305,20 +305,15 @@ impl World {
         // TODO: Check other entities with blocksBuilding=true (mobs, boats, minecarts, etc.)
         let mut obstructed = false;
         self.players.iter_players(|_uuid, player| {
-            let player_pos = player.position.lock();
-            let half_width = Self::PLAYER_WIDTH / 2.0;
-            let player_aabb = AABBd::new(
-                player_pos.x - half_width,
-                player_pos.y,
-                player_pos.z - half_width,
-                player_pos.x + half_width,
-                player_pos.y + Self::PLAYER_HEIGHT,
-                player_pos.z + half_width,
+            let player_aabb = AABBd::entity_box(
+                *player.position.lock(),
+                Self::PLAYER_WIDTH / 2.0,
+                Self::PLAYER_HEIGHT,
             );
 
             // Check if any block AABB intersects with the player
             for block_aabb in collision_shape {
-                let world_aabb = block_aabb.at_block(pos.x(), pos.y(), pos.z());
+                let world_aabb = block_aabb.at_block(pos.0);
                 if player_aabb.intersects_block_aabb(&world_aabb) {
                     obstructed = true;
                     return false; // stop iteration
@@ -1326,16 +1321,8 @@ impl World {
                 f64::from(block_pos.y()),
                 f64::from(block_pos.z()),
             );
-            let world_min = DVec3::new(
-                f64::from(shape.min_x),
-                f64::from(shape.min_y),
-                f64::from(shape.min_z),
-            ) + block_vec;
-            let world_max = DVec3::new(
-                f64::from(shape.max_x),
-                f64::from(shape.max_y),
-                f64::from(shape.max_z),
-            ) + block_vec;
+            let world_min = shape.min.as_dvec3() + block_vec;
+            let world_max = shape.max.as_dvec3() + block_vec;
 
             if let Some(hit) = Self::intersects_aabb_with_t(from, to, world_min, world_max)
                 && closest.is_none_or(|(best_t, _)| hit.0 < best_t)

@@ -140,23 +140,15 @@ fn apply_sneak_edge_prevention(
 
     // Calculate position after movement
     let new_aabb = AABBd {
-        min_x: aabb.min_x + delta.x,
-        min_y: aabb.min_y + delta.y,
-        min_z: aabb.min_z + delta.z,
-        max_x: aabb.max_x + delta.x,
-        max_y: aabb.max_y + delta.y,
-        max_z: aabb.max_z + delta.z,
+        min: aabb.min + delta,
+        max: aabb.max + delta,
     };
 
     // Check if there's ground below the new position
     // We check down to 1 block below (vanilla checks maxUpStep + 1.0)
     let check_down_aabb = AABBd {
-        min_x: new_aabb.min_x,
-        min_y: new_aabb.min_y - 1.0,
-        min_z: new_aabb.min_z,
-        max_x: new_aabb.max_x,
-        max_y: new_aabb.min_y,
-        max_z: new_aabb.max_z,
+        min: DVec3::new(new_aabb.min.x, new_aabb.min.y - 1.0, new_aabb.min.z),
+        max: new_aabb.max,
     };
 
     let ground_below = world.get_block_collisions(&check_down_aabb);
@@ -260,28 +252,16 @@ fn collide_with_world(
 fn move_aabb(aabb: &AABBd, axis: Axis, amount: f64) -> AABBd {
     match axis {
         Axis::X => AABBd {
-            min_x: aabb.min_x + amount,
-            min_y: aabb.min_y,
-            min_z: aabb.min_z,
-            max_x: aabb.max_x + amount,
-            max_y: aabb.max_y,
-            max_z: aabb.max_z,
+            min: DVec3::new(aabb.min.x + amount, aabb.min.y, aabb.min.z),
+            max: DVec3::new(aabb.max.x + amount, aabb.max.y, aabb.max.z),
         },
         Axis::Y => AABBd {
-            min_x: aabb.min_x,
-            min_y: aabb.min_y + amount,
-            min_z: aabb.min_z,
-            max_x: aabb.max_x,
-            max_y: aabb.max_y + amount,
-            max_z: aabb.max_z,
+            min: DVec3::new(aabb.min.x, aabb.min.y + amount, aabb.min.z),
+            max: DVec3::new(aabb.max.x, aabb.max.y + amount, aabb.max.z),
         },
         Axis::Z => AABBd {
-            min_x: aabb.min_x,
-            min_y: aabb.min_y,
-            min_z: aabb.min_z + amount,
-            max_x: aabb.max_x,
-            max_y: aabb.max_y,
-            max_z: aabb.max_z + amount,
+            min: DVec3::new(aabb.min.x, aabb.min.y, aabb.min.z + amount),
+            max: DVec3::new(aabb.max.x, aabb.max.y, aabb.max.z + amount),
         },
     }
 }
@@ -335,12 +315,16 @@ fn try_step_up(
 
     // Sweep for collisions during the entire step attempt
     let step_sweep_aabb = AABBd {
-        min_x: (aabb.min_x + movement.x).min(aabb.min_x),
-        min_y: aabb.min_y,
-        min_z: (aabb.min_z + movement.z).min(aabb.min_z),
-        max_x: (aabb.max_x + movement.x).max(aabb.max_x),
-        max_y: aabb.max_y + max_step,
-        max_z: (aabb.max_z + movement.z).max(aabb.max_z),
+        min: DVec3::new(
+            (aabb.min.x + movement.x).min(aabb.min.x),
+            aabb.min.y,
+            (aabb.min.z + movement.z).min(aabb.min.z),
+        ),
+        max: DVec3::new(
+            (aabb.max.x + movement.x).max(aabb.max.x),
+            aabb.max.y + max_step,
+            (aabb.max.z + movement.z).max(aabb.max.z),
+        ),
     };
     let collisions = world.get_block_collisions(&step_sweep_aabb);
 
@@ -410,36 +394,40 @@ fn try_step_up(
 /// Creates an AABB that encompasses the start and end positions of a movement.
 fn sweep_aabb(aabb: &AABBd, movement: DVec3) -> AABBd {
     AABBd {
-        min_x: if movement.x < 0.0 {
-            aabb.min_x + movement.x
-        } else {
-            aabb.min_x
-        },
-        min_y: if movement.y < 0.0 {
-            aabb.min_y + movement.y
-        } else {
-            aabb.min_y
-        },
-        min_z: if movement.z < 0.0 {
-            aabb.min_z + movement.z
-        } else {
-            aabb.min_z
-        },
-        max_x: if movement.x > 0.0 {
-            aabb.max_x + movement.x
-        } else {
-            aabb.max_x
-        },
-        max_y: if movement.y > 0.0 {
-            aabb.max_y + movement.y
-        } else {
-            aabb.max_y
-        },
-        max_z: if movement.z > 0.0 {
-            aabb.max_z + movement.z
-        } else {
-            aabb.max_z
-        },
+        min: DVec3::new(
+            if movement.x < 0.0 {
+                aabb.min.x + movement.x
+            } else {
+                aabb.min.x
+            },
+            if movement.y < 0.0 {
+                aabb.min.y + movement.y
+            } else {
+                aabb.min.y
+            },
+            if movement.z < 0.0 {
+                aabb.min.z + movement.z
+            } else {
+                aabb.min.z
+            },
+        ),
+        max: DVec3::new(
+            if movement.x > 0.0 {
+                aabb.max.x + movement.x
+            } else {
+                aabb.max.x
+            },
+            if movement.y > 0.0 {
+                aabb.max.y + movement.y
+            } else {
+                aabb.max.y
+            },
+            if movement.z > 0.0 {
+                aabb.max.z + movement.z
+            } else {
+                aabb.max.z
+            },
+        ),
     }
 }
 
@@ -470,15 +458,11 @@ mod tests {
         fn get_block_collisions(&self, aabb: &AABBd) -> Vec<AABBd> {
             let mut collisions = Vec::new();
 
-            if self.has_floor && aabb.min_y <= 1.0 {
+            if self.has_floor && aabb.min.y <= 1.0 {
                 // Full block at Y=0
                 collisions.push(AABBd {
-                    min_x: -10.0,
-                    min_y: 0.0,
-                    min_z: -10.0,
-                    max_x: 10.0,
-                    max_y: 1.0,
-                    max_z: 10.0,
+                    min: DVec3::new(-10.0, 0.0, -10.0),
+                    max: DVec3::new(10.0, 1.0, 10.0),
                 });
             }
 

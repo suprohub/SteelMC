@@ -56,44 +56,31 @@ impl CollisionWorld for WorldCollisionProvider<'_> {
     fn get_block_collisions(&self, aabb: &AABBd) -> Vec<AABBd> {
         let mut collisions = Vec::new();
 
-        // Calculate block bounds from AABB (vanilla uses BlockPos.betweenClosed)
-        let min_x = aabb.min_x.floor() as i32;
-        let min_y = aabb.min_y.floor() as i32;
-        let min_z = aabb.min_z.floor() as i32;
-        let max_x = aabb.max_x.ceil() as i32;
-        let max_y = aabb.max_y.ceil() as i32;
-        let max_z = aabb.max_z.ceil() as i32;
-
         // Iterate over all blocks that could intersect
-        for y in min_y..=max_y {
-            for z in min_z..=max_z {
-                for x in min_x..=max_x {
-                    let block_pos = BlockPos::new(x, y, z);
-                    let block_state = self.world.get_block_state(block_pos);
+        for block_pos in AABBd::new(aabb.min, aabb.max.ceil()).blocks() {
+            let block_state = self.world.get_block_state(block_pos);
 
-                    // Skip air blocks
-                    if block_state.is_air() {
-                        continue;
-                    }
+            // Skip air blocks
+            if block_state.is_air() {
+                continue;
+            }
 
-                    // Get collision shape for this block
-                    let collision_shape = block_state.get_collision_shape();
+            // Get collision shape for this block
+            let collision_shape = block_state.get_collision_shape();
 
-                    // Skip blocks with no collision
-                    if collision_shape.is_empty() {
-                        continue;
-                    }
+            // Skip blocks with no collision
+            if collision_shape.is_empty() {
+                continue;
+            }
 
-                    // Translate each AABB in the shape to world coordinates
-                    let block_pos_vec = IVec3::new(x, y, z);
-                    for shape_aabb in collision_shape {
-                        let world_aabb = translate_shape(shape_aabb, block_pos_vec);
+            // Translate each AABB in the shape to world coordinates
+            let block_pos_vec = block_pos.0;
+            for shape_aabb in collision_shape {
+                let world_aabb = translate_shape(shape_aabb, block_pos_vec);
 
-                        // Only include if it actually intersects our query AABB
-                        if intersects_aabb(aabb, &world_aabb) {
-                            collisions.push(world_aabb);
-                        }
-                    }
+                // Only include if it actually intersects our query AABB
+                if intersects_aabb(aabb, &world_aabb) {
+                    collisions.push(world_aabb);
                 }
             }
         }
@@ -143,12 +130,12 @@ impl CollisionWorld for WorldCollisionProvider<'_> {
 /// Helper function to check if two AABBs intersect.
 #[inline]
 fn intersects_aabb(a: &AABBd, b: &AABBd) -> bool {
-    a.max_x > b.min_x
-        && a.min_x < b.max_x
-        && a.max_y > b.min_y
-        && a.min_y < b.max_y
-        && a.max_z > b.min_z
-        && a.min_z < b.max_z
+    a.max.x > b.min.x
+        && a.min.x < b.max.x
+        && a.max.y > b.min.y
+        && a.min.y < b.max.y
+        && a.max.z > b.min.z
+        && a.min.z < b.max.z
 }
 
 #[cfg(test)]
@@ -157,34 +144,13 @@ mod tests {
 
     #[test]
     fn test_intersects_aabb() {
-        let aabb1 = AABBd {
-            min_x: 0.0,
-            min_y: 0.0,
-            min_z: 0.0,
-            max_x: 2.0,
-            max_y: 2.0,
-            max_z: 2.0,
-        };
+        let aabb1 = AABBd::new(DVec3::ZERO, DVec3::splat(2.0));
 
-        let aabb2 = AABBd {
-            min_x: 1.0,
-            min_y: 1.0,
-            min_z: 1.0,
-            max_x: 3.0,
-            max_y: 3.0,
-            max_z: 3.0,
-        };
+        let aabb2 = AABBd::new(DVec3::ONE, DVec3::splat(3.0));
 
         assert!(intersects_aabb(&aabb1, &aabb2));
 
-        let aabb3 = AABBd {
-            min_x: 5.0,
-            min_y: 5.0,
-            min_z: 5.0,
-            max_x: 6.0,
-            max_y: 6.0,
-            max_z: 6.0,
-        };
+        let aabb3 = AABBd::new(DVec3::splat(5.0), DVec3::splat(6.0));
 
         assert!(!intersects_aabb(&aabb1, &aabb3));
     }

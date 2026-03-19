@@ -546,7 +546,7 @@ impl Player {
         }
 
         // Calculate pickup area (vanilla: Player.aiStep lines 454-458)
-        let pickup_area = self.bounding_box().inflate_xyz(1.0, 0.5, 1.0);
+        let pickup_area = self.bounding_box().inflate_xyz(DVec3::new(1.0, 0.5, 1.0));
 
         // Get all entities in the pickup area
         let entities = self.world.get_entities_in_aabb(&pickup_area);
@@ -1574,23 +1574,18 @@ impl Player {
     #[must_use]
     pub fn is_within_block_interaction_range(&self, pos: BlockPos) -> bool {
         let player_pos = *self.position.lock();
-        let eye_y = player_pos.y + self.get_eye_height();
+        let eye_pos = DVec3::new(
+            player_pos.x,
+            player_pos.y + self.get_eye_height(),
+            player_pos.z,
+        );
 
-        // Block AABB is [x, y, z] to [x+1, y+1, z+1]
-        let min_x = f64::from(pos.x());
-        let min_y = f64::from(pos.y());
-        let min_z = f64::from(pos.z());
-        let max_x = min_x + 1.0;
-        let max_y = min_y + 1.0;
-        let max_z = min_z + 1.0;
+        let block_min = pos.0.as_dvec3();
+        let block_max = block_min + DVec3::splat(1.0);
 
-        // Distance from eye to nearest point on block AABB (0 if inside on that axis)
-        let dx = f64::max(f64::max(min_x - player_pos.x, player_pos.x - max_x), 0.0);
-        let dy = f64::max(f64::max(min_y - eye_y, eye_y - max_y), 0.0);
-        let dz = f64::max(f64::max(min_z - player_pos.z, player_pos.z - max_z), 0.0);
-        let dist_sq = dx * dx + dy * dy + dz * dz;
+        let closest = eye_pos.clamp(block_min, block_max);
+        let dist_sq = eye_pos.distance_squared(closest);
 
-        // Base range is 4.5 blocks + 1.0 buffer
         let max_range = 4.5 + 1.0;
         dist_sq < max_range * max_range
     }
@@ -2449,26 +2444,14 @@ impl Player {
 
         let aabb = self.bounding_box().deflate(1.0E-5);
 
-        let min_x = aabb.min_x.floor() as i32;
-        let min_y = aabb.min_y.floor() as i32;
-        let min_z = aabb.min_z.floor() as i32;
-        let max_x = aabb.max_x.floor() as i32;
-        let max_y = aabb.max_y.floor() as i32;
-        let max_z = aabb.max_z.floor() as i32;
-
-        for x in min_x..=max_x {
-            for y in min_y..=max_y {
-                for z in min_z..=max_z {
-                    let pos = BlockPos::new(x, y, z);
-                    let state = self.world.get_block_state(pos);
-                    if state.is_air() {
-                        continue;
-                    }
-                    let block = state.get_block();
-                    let behavior = BLOCK_BEHAVIORS.get_behavior(block);
-                    behavior.entity_inside(state, &self.world, pos, self as &dyn Entity);
-                }
+        for pos in aabb.blocks() {
+            let state = self.world.get_block_state(pos);
+            if state.is_air() {
+                continue;
             }
+            let block = state.get_block();
+            let behavior = BLOCK_BEHAVIORS.get_behavior(block);
+            behavior.entity_inside(state, &self.world, pos, self as &dyn Entity);
         }
     }
 
@@ -2876,19 +2859,9 @@ impl Entity for Player {
     }
 
     fn bounding_box(&self) -> AABBd {
-        let pos = self.position();
         // Player hitbox: 0.6 wide, 1.8 tall (standing)
         // TODO: Adjust for pose (crouching, swimming, etc.)
-        let half_width = 0.3;
-        let height = 1.8;
-        AABBd {
-            min_x: pos.x - half_width,
-            min_y: pos.y,
-            min_z: pos.z - half_width,
-            max_x: pos.x + half_width,
-            max_y: pos.y + height,
-            max_z: pos.z + half_width,
-        }
+        AABBd::entity_box(self.position(), 0.6 / 2.0, 1.8)
     }
 
     fn tick(&self) {

@@ -122,12 +122,12 @@ impl EntityCache {
         let mut result = Vec::new();
 
         // Determine section range (with 2 block grace like vanilla)
-        let min_x = ((aabb.min_x - 2.0) as i32) >> 4;
-        let min_y = ((aabb.min_y - 2.0) as i32) >> 4;
-        let min_z = ((aabb.min_z - 2.0) as i32) >> 4;
-        let max_x = ((aabb.max_x + 2.0) as i32) >> 4;
-        let max_y = ((aabb.max_y + 2.0) as i32) >> 4;
-        let max_z = ((aabb.max_z + 2.0) as i32) >> 4;
+        let min_x = ((aabb.min.x - 2.0) as i32) >> 4;
+        let min_y = ((aabb.min.y - 2.0) as i32) >> 4;
+        let min_z = ((aabb.min.z - 2.0) as i32) >> 4;
+        let max_x = ((aabb.max.x + 2.0) as i32) >> 4;
+        let max_y = ((aabb.max.y + 2.0) as i32) >> 4;
+        let max_z = ((aabb.max.z + 2.0) as i32) >> 4;
 
         for sy in min_y..=max_y {
             for sz in min_z..=max_z {

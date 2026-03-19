@@ -90,12 +90,12 @@ impl EntityPhysicsState {
         let height = f64::from(dimensions.height);
 
         AABBd {
-            min_x: position.x - half_width,
-            min_y: position.y,
-            min_z: position.z - half_width,
-            max_x: position.x + half_width,
-            max_y: position.y + height,
-            max_z: position.z + half_width,
+            min: DVec3::new(position.x - half_width, position.y, position.z - half_width),
+            max: DVec3::new(
+                position.x + half_width,
+                position.y + height,
+                position.z + half_width,
+            ),
         }
     }
 
