@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 
+use glam::IVec3;
 use sha2::{Digest, Sha256};
 use steel_registry::RegistryEntry;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
@@ -153,23 +154,21 @@ impl<N: DimensionNoises> ChunkGenerator for VanillaGenerator<N> {
 
     fn fill_from_noise(&self, chunk: &ChunkAccess) {
         let pos = chunk.pos();
-        let chunk_min_x = pos.0.x * 16;
-        let chunk_min_z = pos.0.y * 16;
+        let chunk_min = pos.0 * 16;
 
         let min_y = N::Settings::MIN_Y;
         let height = N::Settings::HEIGHT;
 
-        let mut noise_chunk = NoiseChunk::<N>::new(chunk_min_x, chunk_min_z);
+        let mut noise_chunk = NoiseChunk::<N>::new(chunk_min.x, chunk_min.y);
         let noises = &*self.noises;
 
         let mut column_cache = N::ColumnCache::default();
-        column_cache.init_grid(chunk_min_x, chunk_min_z, noises);
+        column_cache.init_grid(chunk_min.x, chunk_min.y, noises);
 
         let default_block_id = self.default_block_id;
         let ore_veinifier = &self.ore_veinifier;
         let mut aquifer = Aquifer::<N>::new(
-            chunk_min_x,
-            chunk_min_z,
+            chunk_min,
             min_y,
             height,
             &self.splitter,
@@ -209,10 +208,10 @@ impl<N: DimensionNoises> ChunkGenerator for VanillaGenerator<N> {
                 }
 
                 let relative_y = (world_y - min_y) as usize;
-                let world_x = chunk_min_x + local_x as i32;
-                let world_z = chunk_min_z + local_z as i32;
+                let world_x = chunk_min.x + local_x as i32;
+                let world_z = chunk_min.y + local_z as i32;
 
-                match aquifer.compute_substance(noises, world_x, world_y, world_z, density) {
+                match aquifer.compute_substance(noises, IVec3::new(world_x, world_y, world_z), density) {
                     AquiferResult::Solid => {
                         let block = ore_veinifier
                             .as_ref()
@@ -247,8 +246,7 @@ impl<N: DimensionNoises> ChunkGenerator for VanillaGenerator<N> {
     fn build_surface(&self, chunk: &ChunkAccess, neighbor_biomes: &dyn Fn(i32, i32, i32) -> u16) {
         let min_y = N::Settings::MIN_Y;
         let pos = chunk.pos();
-        let chunk_min_x = pos.0.x * 16;
-        let chunk_min_z = pos.0.y * 16;
+        let chunk_min = pos.0 * 16;
         let default_block_id = self.default_block_id;
         let noises = &*self.noises;
         let chunk_quart_x = pos.0.x * 4;
@@ -261,16 +259,15 @@ impl<N: DimensionNoises> ChunkGenerator for VanillaGenerator<N> {
         // Pre-compute the 4 preliminary surface level corners for the 16-block cell.
         // Vanilla uses bilinear interpolation across these 4 corners (SurfaceRules.Context).
         let mut psl_cache = N::ColumnCache::default();
-        let p00 = preliminary_surface_level::<N>(noises, &mut psl_cache, chunk_min_x, chunk_min_z);
+        let p00 = preliminary_surface_level::<N>(noises, &mut psl_cache, chunk_min);
         let p10 =
-            preliminary_surface_level::<N>(noises, &mut psl_cache, chunk_min_x + 16, chunk_min_z);
+            preliminary_surface_level::<N>(noises, &mut psl_cache, chunk_min.with_x(chunk_min.x + 16));
         let p01 =
-            preliminary_surface_level::<N>(noises, &mut psl_cache, chunk_min_x, chunk_min_z + 16);
+            preliminary_surface_level::<N>(noises, &mut psl_cache, chunk_min.with_y(chunk_min.y + 16));
         let p11 = preliminary_surface_level::<N>(
             noises,
             &mut psl_cache,
-            chunk_min_x + 16,
-            chunk_min_z + 16,
+            chunk_min + 16
         );
 
         // Read WorldSurfaceWg heightmap once
@@ -292,8 +289,8 @@ impl<N: DimensionNoises> ChunkGenerator for VanillaGenerator<N> {
 
         for local_x in 0..16usize {
             for local_z in 0..16usize {
-                let block_x = chunk_min_x + local_x as i32;
-                let block_z = chunk_min_z + local_z as i32;
+                let block_x = chunk_min.x + local_x as i32;
+                let block_z = chunk_min.y + local_z as i32;
 
                 // Start scanning from one above the highest non-air block
                 let mut start_height = worldgen_surface.get_first_available(local_x, local_z);

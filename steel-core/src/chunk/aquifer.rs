@@ -7,6 +7,7 @@
 //! Barrier pressure between neighboring aquifer cells creates solid rock
 //! walls between fluid pockets.
 
+use glam::{IVec2, IVec3};
 use steel_registry::{REGISTRY, vanilla_blocks};
 use steel_utils::BlockStateId;
 use steel_utils::density::{ColumnCache, DimensionNoises, NoiseSettings};
@@ -33,20 +34,20 @@ const WAY_BELOW_MIN_Y: i32 = -32512;
 
 /// Chunk offsets (in chunks, ×16 for blocks) used when sampling
 /// preliminary surface levels around an aquifer cell center.
-const SURFACE_SAMPLING_OFFSETS: [[i32; 2]; 13] = [
-    [0, 0],
-    [-2, -1],
-    [-1, -1],
-    [0, -1],
-    [1, -1],
-    [-3, 0],
-    [-2, 0],
-    [-1, 0],
-    [1, 0],
-    [-2, 1],
-    [-1, 1],
-    [0, 1],
-    [1, 1],
+const SURFACE_SAMPLING_OFFSETS: [IVec2; 13] = [
+    IVec2::new(0, 0),
+    IVec2::new(-2, -1),
+    IVec2::new(-1, -1),
+    IVec2::new(0, -1),
+    IVec2::new(1, -1),
+    IVec2::new(-3, 0),
+    IVec2::new(-2, 0),
+    IVec2::new(-1, 0),
+    IVec2::new(1, 0),
+    IVec2::new(-2, 1),
+    IVec2::new(-1, 1),
+    IVec2::new(0, 1),
+    IVec2::new(1, 1),
 ];
 
 /// Fluid status at an aquifer cell center.
@@ -96,12 +97,10 @@ pub struct Aquifer<N: DimensionNoises> {
     splitter: RandomSplitter,
     /// Column cache owned by the aquifer for density function evaluation.
     cache: N::ColumnCache,
-    /// Grid bounds.
-    min_grid_x: i32,
-    min_grid_y: i32,
-    min_grid_z: i32,
-    grid_size_x: i32,
-    grid_size_z: i32,
+    /// Minimum grid cell coordinates (in grid space) covered by this aquifer.
+    min_grid: IVec3,
+    /// Grid size in cells (x, z). Y size is derived from cache length.
+    grid_size: IVec2,
     /// Skip aquifer sampling above this Y (optimization).
     skip_sampling_above_y: i32,
     /// Sea level for this dimension.
@@ -147,25 +146,19 @@ const X_OFFSET: i32 = 38;
 const Z_OFFSET: i32 = 12;
 
 #[inline]
-fn pack_pos(x: i32, y: i32, z: i32) -> i64 {
-    ((i64::from(x) & PACKED_X_MASK) << X_OFFSET)
-        | (i64::from(y) & PACKED_Y_MASK)
-        | ((i64::from(z) & PACKED_Z_MASK) << Z_OFFSET)
+fn pack_pos(pos: IVec3) -> i64 {
+    ((i64::from(pos.x) & PACKED_X_MASK) << X_OFFSET)
+        | (i64::from(pos.y) & PACKED_Y_MASK)
+        | ((i64::from(pos.z) & PACKED_Z_MASK) << Z_OFFSET)
 }
 
 #[inline]
-const fn unpack_x(packed: i64) -> i32 {
-    (packed >> X_OFFSET) as i32
-}
-
-#[inline]
-const fn unpack_y(packed: i64) -> i32 {
-    ((packed << 52) >> 52) as i32
-}
-
-#[inline]
-const fn unpack_z(packed: i64) -> i32 {
-    ((packed << 26) >> X_OFFSET) as i32
+const fn unpack_pos(packed: i64) -> IVec3 {
+    IVec3::new(
+        (packed >> X_OFFSET) as i32,
+        ((packed << 52) >> 52) as i32,
+        ((packed << 26) >> X_OFFSET) as i32,
+    )
 }
 
 /// Similarity between two squared distances. Positive when the two nearest
@@ -179,13 +172,11 @@ fn similarity(dist_sq1: i32, dist_sq2: i32) -> f64 {
 fn is_deep_dark_region<N: DimensionNoises>(
     noises: &N,
     cache: &mut N::ColumnCache,
-    x: i32,
-    y: i32,
-    z: i32,
+    pos: IVec3,
 ) -> bool {
-    cache.ensure(x, z, noises);
-    let erosion = noises.router_erosion(cache, x, y, z);
-    let depth = noises.router_depth(cache, x, y, z);
+    cache.ensure(pos.x, pos.z, noises);
+    let erosion = noises.router_erosion(cache, pos.x, pos.y, pos.z);
+    let depth = noises.router_depth(cache, pos.x, pos.y, pos.z);
     erosion < -0.225 && depth > 0.9
 }
 
@@ -215,15 +206,14 @@ fn global_fluid(
 impl<N: DimensionNoises> Aquifer<N> {
     /// Create a new aquifer for a chunk.
     ///
-    /// `chunk_min_x/z` are the block coordinates of the chunk's NW corner.
+    /// `chunk_min` is the block coordinates of the chunk's NW corner (x, z).
     /// `min_block_y` and `y_block_size` define the vertical range.
     /// `splitter` is the seed's positional splitter.
     /// `cache` should be a pre-initialized column cache for this chunk
     /// (avoids a redundant `init_grid` call).
     #[must_use]
     pub fn new(
-        chunk_min_x: i32,
-        chunk_min_z: i32,
+        chunk_min: IVec2,
         min_block_y: i32,
         y_block_size: i32,
         splitter: &RandomSplitter,
@@ -248,11 +238,8 @@ impl<N: DimensionNoises> Aquifer<N> {
                 status_cache: Vec::new(),
                 splitter,
                 cache,
-                min_grid_x: 0,
-                min_grid_y: 0,
-                min_grid_z: 0,
-                grid_size_x: 0,
-                grid_size_z: 0,
+                min_grid: IVec3::ZERO,
+                grid_size: IVec2::ZERO,
                 skip_sampling_above_y: 0,
                 sea_level,
                 water_id,
@@ -261,19 +248,18 @@ impl<N: DimensionNoises> Aquifer<N> {
             };
         }
 
-        let chunk_max_x = chunk_min_x + 15;
-        let chunk_max_z = chunk_min_z + 15;
+        let chunk_max = chunk_min + IVec2::new(15, 15);
 
-        let min_grid_x = grid_x(chunk_min_x + SAMPLE_OFFSET_X);
-        let max_grid_x = grid_x(chunk_max_x + SAMPLE_OFFSET_X) + 1;
+        let min_grid_x = grid_x(chunk_min.x + SAMPLE_OFFSET_X);
+        let max_grid_x = grid_x(chunk_max.x + SAMPLE_OFFSET_X) + 1;
         let grid_size_x = max_grid_x - min_grid_x + 1;
 
         let min_grid_y = grid_y(min_block_y + SAMPLE_OFFSET_Y) - 1;
         let max_grid_y = grid_y(min_block_y + y_block_size + SAMPLE_OFFSET_Y) + 1;
         let grid_size_y = max_grid_y - min_grid_y + 1;
 
-        let min_grid_z = grid_z(chunk_min_z + SAMPLE_OFFSET_Z);
-        let max_grid_z = grid_z(chunk_max_z + SAMPLE_OFFSET_Z) + 1;
+        let min_grid_z = grid_z(chunk_min.y + SAMPLE_OFFSET_Z);
+        let max_grid_z = grid_z(chunk_max.y + SAMPLE_OFFSET_Z) + 1;
         let grid_size_z = max_grid_z - min_grid_z + 1;
 
         let total = (grid_size_x * grid_size_y * grid_size_z) as usize;
@@ -298,11 +284,8 @@ impl<N: DimensionNoises> Aquifer<N> {
             status_cache,
             splitter,
             cache,
-            min_grid_x,
-            min_grid_y,
-            min_grid_z,
-            grid_size_x,
-            grid_size_z,
+            min_grid: IVec3::new(min_grid_x, min_grid_y, min_grid_z),
+            grid_size: IVec2::new(grid_size_x, grid_size_z),
             skip_sampling_above_y,
             sea_level,
             water_id,
@@ -325,7 +308,7 @@ impl<N: DimensionNoises> Aquifer<N> {
         while z <= max_z {
             let mut x = min_x;
             while x <= max_x {
-                let level = preliminary_surface_level(noises, cache, x, z);
+                let level = preliminary_surface_level(noises, cache, IVec2::new(x, z));
                 if level > max_level {
                     max_level = level;
                 }
@@ -337,11 +320,11 @@ impl<N: DimensionNoises> Aquifer<N> {
     }
 
     #[inline]
-    const fn get_index(&self, gx: i32, gy: i32, gz: i32) -> usize {
-        let x = gx - self.min_grid_x;
-        let y = gy - self.min_grid_y;
-        let z = gz - self.min_grid_z;
-        ((y * self.grid_size_z + z) * self.grid_size_x + x) as usize
+    const fn get_index(&self, grid: IVec3) -> usize {
+        let x = grid.x - self.min_grid.x;
+        let y = grid.y - self.min_grid.y;
+        let z = grid.z - self.min_grid.z;
+        ((y * self.grid_size.y + z) * self.grid_size.x + x) as usize
     }
 
     /// Compute what block to place at this position given the interpolated density.
@@ -349,9 +332,7 @@ impl<N: DimensionNoises> Aquifer<N> {
     pub fn compute_substance(
         &mut self,
         noises: &N,
-        world_x: i32,
-        world_y: i32,
-        world_z: i32,
+        world_pos: IVec3,
         density: f64,
     ) -> AquiferResult {
         // Solid block — let the caller decide (stone or ore)
@@ -362,32 +343,32 @@ impl<N: DimensionNoises> Aquifer<N> {
         // Disabled aquifers (nether/end): use global fluid picker directly,
         // matching vanilla's `Aquifer.createDisabled`.
         if !N::Settings::AQUIFERS_ENABLED {
-            let gf = global_fluid(world_y, self.sea_level, self.lava_id, self.default_fluid_id);
-            return match gf.at(world_y) {
+            let gf = global_fluid(world_pos.y, self.sea_level, self.lava_id, self.default_fluid_id);
+            return match gf.at(world_pos.y) {
                 Some(id) => AquiferResult::Fluid(id),
                 None => AquiferResult::Air,
             };
         }
 
-        let gf = global_fluid(world_y, self.sea_level, self.lava_id, self.default_fluid_id);
+        let gf = global_fluid(world_pos.y, self.sea_level, self.lava_id, self.default_fluid_id);
 
         // Above the skip threshold: use global fluid directly
-        if world_y > self.skip_sampling_above_y {
-            return match gf.at(world_y) {
+        if world_pos.y > self.skip_sampling_above_y {
+            return match gf.at(world_pos.y) {
                 Some(id) => AquiferResult::Fluid(id),
                 None => AquiferResult::Air,
             };
         }
 
         // If global fluid is lava here, return lava
-        if gf.fluid_type == self.lava_id && world_y < gf.fluid_level {
+        if gf.fluid_type == self.lava_id && world_pos.y < gf.fluid_level {
             return AquiferResult::Fluid(self.lava_id);
         }
 
         // Find 4 nearest aquifer cell centers from 2×3×2 neighborhood
-        let x_anchor = grid_x(world_x + SAMPLE_OFFSET_X);
-        let y_anchor = grid_y(world_y + SAMPLE_OFFSET_Y);
-        let z_anchor = grid_z(world_z + SAMPLE_OFFSET_Z);
+        let x_anchor = grid_x(world_pos.x + SAMPLE_OFFSET_X);
+        let y_anchor = grid_y(world_pos.y + SAMPLE_OFFSET_Y);
+        let z_anchor = grid_z(world_pos.z + SAMPLE_OFFSET_Z);
 
         let mut dist_sq = [i32::MAX; 4];
         let mut closest_idx = [0usize; 4];
@@ -395,30 +376,27 @@ impl<N: DimensionNoises> Aquifer<N> {
         for x1 in 0..=1 {
             for y1 in -1..=1 {
                 for z1 in 0..=1 {
-                    let gx = x_anchor + x1;
-                    let gy = y_anchor + y1;
-                    let gz = z_anchor + z1;
-                    let index = self.get_index(gx, gy, gz);
+                    let grid = IVec3::new(x_anchor + x1, y_anchor + y1, z_anchor + z1);
+                    let index = self.get_index(grid);
 
                     // Get or compute cell center location
                     let loc = self.location_cache[index];
                     let loc = if loc == i64::MAX {
-                        let mut rng = self.splitter.at(gx, gy, gz);
-                        let packed = pack_pos(
-                            from_grid_x(gx, rng.next_i32_bounded(X_RANGE)),
-                            from_grid_y(gy, rng.next_i32_bounded(Y_RANGE)),
-                            from_grid_z(gz, rng.next_i32_bounded(Z_RANGE)),
-                        );
+                        let mut rng = self.splitter.at(grid.x, grid.y, grid.z);
+                        let packed = pack_pos(IVec3::new(
+                            from_grid_x(grid.x, rng.next_i32_bounded(X_RANGE)),
+                            from_grid_y(grid.y, rng.next_i32_bounded(Y_RANGE)),
+                            from_grid_z(grid.z, rng.next_i32_bounded(Z_RANGE)),
+                        ));
                         self.location_cache[index] = packed;
                         packed
                     } else {
                         loc
                     };
 
-                    let dx = unpack_x(loc) - world_x;
-                    let dy = unpack_y(loc) - world_y;
-                    let dz = unpack_z(loc) - world_z;
-                    let new_dist = dx * dx + dy * dy + dz * dz;
+                    let center = unpack_pos(loc);
+                    let delta = center - world_pos;
+                    let new_dist = delta.x * delta.x + delta.y * delta.y + delta.z * delta.z;
 
                     // Insert into sorted top-4
                     if dist_sq[0] >= new_dist {
@@ -453,7 +431,7 @@ impl<N: DimensionNoises> Aquifer<N> {
         let status1 = self.get_aquifer_status(closest_idx[0], noises);
         let sim12 = similarity(dist_sq[0], dist_sq[1]);
 
-        let fluid_at = status1.at(world_y);
+        let fluid_at = status1.at(world_pos.y);
 
         if sim12 <= 0.0 {
             // Not near a boundary — return closest fluid
@@ -468,12 +446,12 @@ impl<N: DimensionNoises> Aquifer<N> {
             && id == self.water_id
         {
             let below = global_fluid(
-                world_y - 1,
+                world_pos.y - 1,
                 self.sea_level,
                 self.lava_id,
                 self.default_fluid_id,
             );
-            if below.fluid_type == self.lava_id && (world_y - 1) < below.fluid_level {
+            if below.fluid_type == self.lava_id && (world_pos.y - 1) < below.fluid_level {
                 return AquiferResult::Fluid(id);
             }
         }
@@ -484,9 +462,7 @@ impl<N: DimensionNoises> Aquifer<N> {
         let barrier12 = sim12
             * self.calculate_pressure(
                 noises,
-                world_x,
-                world_y,
-                world_z,
+                world_pos,
                 &mut barrier_noise,
                 status1,
                 status2,
@@ -502,9 +478,7 @@ impl<N: DimensionNoises> Aquifer<N> {
                 * sim13
                 * self.calculate_pressure(
                     noises,
-                    world_x,
-                    world_y,
-                    world_z,
+                    world_pos,
                     &mut barrier_noise,
                     status1,
                     status3,
@@ -520,9 +494,7 @@ impl<N: DimensionNoises> Aquifer<N> {
                 * sim23
                 * self.calculate_pressure(
                     noises,
-                    world_x,
-                    world_y,
-                    world_z,
+                    world_pos,
                     &mut barrier_noise,
                     status2,
                     status3,
@@ -546,30 +518,28 @@ impl<N: DimensionNoises> Aquifer<N> {
         }
 
         let loc = self.location_cache[index];
-        let x = unpack_x(loc);
-        let y = unpack_y(loc);
-        let z = unpack_z(loc);
-        let status = self.compute_fluid(x, y, z, noises);
+        let pos = unpack_pos(loc);
+        let status = self.compute_fluid(pos, noises);
         self.status_cache[index] = Some(status);
         status
     }
 
-    /// Compute the fluid status for an aquifer cell centered at (x, y, z).
-    fn compute_fluid(&mut self, x: i32, y: i32, z: i32, noises: &N) -> FluidStatus {
-        let gf = global_fluid(y, self.sea_level, self.lava_id, self.default_fluid_id);
+    /// Compute the fluid status for an aquifer cell centered at `pos`.
+    fn compute_fluid(&mut self, pos: IVec3, noises: &N) -> FluidStatus {
+        let gf = global_fluid(pos.y, self.sea_level, self.lava_id, self.default_fluid_id);
         let mut lowest_surface = i32::MAX;
-        let top_of_cell = y + Y_SPACING;
-        let bottom_of_cell = y - Y_SPACING;
+        let top_of_cell = pos.y + Y_SPACING;
+        let bottom_of_cell = pos.y - Y_SPACING;
         let mut surface_under_global = false;
 
         for offset in &SURFACE_SAMPLING_OFFSETS {
-            let sx = x + offset[0] * 16; // sectionToBlockCoord
-            let sz = z + offset[1] * 16;
+            let sx = pos.x + offset.x * 16; // sectionToBlockCoord
+            let sz = pos.z + offset.y * 16;
 
-            let preliminary = preliminary_surface_level(noises, &mut self.cache, sx, sz);
+            let preliminary = preliminary_surface_level(noises, &mut self.cache, IVec2::new(sx, sz));
             let adjusted = preliminary + 8;
 
-            let is_center = offset[0] == 0 && offset[1] == 0;
+            let is_center = offset.x == 0 && offset.y == 0;
 
             if is_center && bottom_of_cell > adjusted {
                 return gf;
@@ -599,9 +569,8 @@ impl<N: DimensionNoises> Aquifer<N> {
             }
         }
 
-        let fluid_level =
-            self.compute_surface_level(x, y, z, noises, gf, lowest_surface, surface_under_global);
-        let fluid_type = self.compute_fluid_type(x, y, z, noises, gf, fluid_level);
+        let fluid_level = self.compute_surface_level(pos, noises, gf, lowest_surface, surface_under_global);
+        let fluid_type = self.compute_fluid_type(pos, noises, gf, fluid_level);
         FluidStatus {
             fluid_level,
             fluid_type,
@@ -611,28 +580,26 @@ impl<N: DimensionNoises> Aquifer<N> {
     #[allow(clippy::too_many_arguments)]
     fn compute_surface_level(
         &mut self,
-        x: i32,
-        y: i32,
-        z: i32,
+        pos: IVec3,
         noises: &N,
         gf: FluidStatus,
         lowest_surface: i32,
         surface_under_global: bool,
     ) -> i32 {
         let (partially_flooded, fully_flooded) =
-            if is_deep_dark_region(noises, &mut self.cache, x, y, z) {
+            if is_deep_dark_region(noises, &mut self.cache, pos) {
                 (-1.0, -1.0)
             } else {
-                let dist_below = lowest_surface + 8 - y;
+                let dist_below = lowest_surface + 8 - pos.y;
                 let floodedness_factor = if surface_under_global {
                     map_clamped(f64::from(dist_below), 0.0, 64.0, 1.0, 0.0)
                 } else {
                     0.0
                 };
 
-                self.cache.ensure(x, z, noises);
+                self.cache.ensure(pos.x, pos.z, noises);
                 let floodedness_noise = clamp(
-                    noises.router_fluid_level_floodedness(&mut self.cache, x, y, z),
+                    noises.router_fluid_level_floodedness(&mut self.cache, pos.x, pos.y, pos.z),
                     -1.0,
                     1.0,
                 );
@@ -649,7 +616,7 @@ impl<N: DimensionNoises> Aquifer<N> {
         if fully_flooded > 0.0 {
             gf.fluid_level
         } else if partially_flooded > 0.0 {
-            self.compute_randomized_fluid_surface_level(x, y, z, noises, lowest_surface)
+            self.compute_randomized_fluid_surface_level(pos, noises, lowest_surface)
         } else {
             WAY_BELOW_MIN_Y
         }
@@ -657,15 +624,13 @@ impl<N: DimensionNoises> Aquifer<N> {
 
     fn compute_randomized_fluid_surface_level(
         &mut self,
-        x: i32,
-        y: i32,
-        z: i32,
+        pos: IVec3,
         noises: &N,
         lowest_surface: i32,
     ) -> i32 {
-        let cell_x = x.div_euclid(16);
-        let cell_y = y.div_euclid(40);
-        let cell_z = z.div_euclid(16);
+        let cell_x = pos.x.div_euclid(16);
+        let cell_y = pos.y.div_euclid(40);
+        let cell_z = pos.z.div_euclid(16);
         let cell_middle_y = cell_y * 40 + 20;
 
         // fluid_level_spread is evaluated at grid coordinates (not block coordinates)
@@ -680,17 +645,15 @@ impl<N: DimensionNoises> Aquifer<N> {
 
     fn compute_fluid_type(
         &mut self,
-        x: i32,
-        y: i32,
-        z: i32,
+        pos: IVec3,
         noises: &N,
         gf: FluidStatus,
         fluid_level: i32,
     ) -> BlockStateId {
         if fluid_level <= -10 && fluid_level != WAY_BELOW_MIN_Y && gf.fluid_type != self.lava_id {
-            let cell_x = x.div_euclid(64);
-            let cell_y = y.div_euclid(40);
-            let cell_z = z.div_euclid(64);
+            let cell_x = pos.x.div_euclid(64);
+            let cell_y = pos.y.div_euclid(40);
+            let cell_z = pos.z.div_euclid(64);
             self.cache.ensure(cell_x, cell_z, noises);
             let lava_noise = noises.router_lava(&mut self.cache, cell_x, cell_y, cell_z);
             if lava_noise.abs() > 0.3 {
@@ -707,15 +670,13 @@ impl<N: DimensionNoises> Aquifer<N> {
     fn calculate_pressure(
         &mut self,
         noises: &N,
-        x: i32,
-        y: i32,
-        z: i32,
+        pos: IVec3,
         barrier_noise: &mut f64,
         s1: FluidStatus,
         s2: FluidStatus,
     ) -> f64 {
-        let f1 = s1.at(y);
-        let f2 = s2.at(y);
+        let f1 = s1.at(pos.y);
+        let f2 = s2.at(pos.y);
         let f1_is_lava = f1 == Some(self.lava_id);
         let f2_is_lava = f2 == Some(self.lava_id);
         let f1_is_water = f1 == Some(self.water_id);
@@ -732,7 +693,7 @@ impl<N: DimensionNoises> Aquifer<N> {
         }
 
         let avg_fluid_y = 0.5 * f64::from(s1.fluid_level + s2.fluid_level);
-        let above_avg = f64::from(y) + 0.5 - avg_fluid_y;
+        let above_avg = f64::from(pos.y) + 0.5 - avg_fluid_y;
         let base = f64::from(fluid_y_diff) / 2.0;
         let edge_dist = base - above_avg.abs();
 
@@ -754,8 +715,8 @@ impl<N: DimensionNoises> Aquifer<N> {
         let noise_val = if !(-2.0..=2.0).contains(&gradient) {
             0.0
         } else if barrier_noise.is_nan() {
-            self.cache.ensure(x, z, noises);
-            let n = noises.router_barrier(&mut self.cache, x, y, z);
+            self.cache.ensure(pos.x, pos.z, noises);
+            let n = noises.router_barrier(&mut self.cache, pos.x, pos.y, pos.z);
             *barrier_noise = n;
             n
         } else {
@@ -780,12 +741,11 @@ fn quantize(value: f64, quantum: i32) -> i32 {
 pub(crate) fn preliminary_surface_level<N: DimensionNoises>(
     noises: &N,
     cache: &mut N::ColumnCache,
-    x: i32,
-    z: i32,
+    pos: IVec2,
 ) -> i32 {
     // Quantize to quart positions: (x >> 2) << 2
-    let qx = (x >> 2) << 2;
-    let qz = (z >> 2) << 2;
+    let qx = (pos.x >> 2) << 2;
+    let qz = (pos.y >> 2) << 2;
     cache.ensure(qx, qz, noises);
     // Vanilla uses Mth.floor(), not truncation
     noises
