@@ -3,11 +3,11 @@
 //! Combines three `PerlinNoise` instances (min limit, max limit, main) for terrain generation.
 //! The main noise determines the blend factor between the min and max limit noises.
 
+use std::cell::RefCell;
 use std::simd::cmp::SimdPartialOrd;
 use std::simd::f64x4;
 use std::simd::{Select, StdFloat};
 
-use crate::locks::SyncMutex;
 use crate::math::clamped_lerp;
 use crate::noise::PerlinNoise;
 use crate::noise::perlin_noise::wrap;
@@ -16,9 +16,8 @@ use crate::random::RandomSource;
 /// Max Y values we can cache per column (49 for overworld, plenty of headroom).
 const MAX_COLUMN_CACHE: usize = 64;
 
-/// Cache for precomputed blended noise column results.
-#[derive(Debug)]
-struct ColumnCache {
+/// Thread-local cache for precomputed blended noise column results.
+struct BlendedColumnCache {
     valid: bool,
     block_x: i32,
     block_z: i32,
@@ -27,7 +26,7 @@ struct ColumnCache {
     results: [f64; MAX_COLUMN_CACHE],
 }
 
-impl ColumnCache {
+impl BlendedColumnCache {
     const fn new() -> Self {
         Self {
             valid: false,
@@ -53,13 +52,17 @@ impl ColumnCache {
     }
 }
 
+thread_local! {
+    static COLUMN_CACHE: RefCell<BlendedColumnCache> = const { RefCell::new(BlendedColumnCache::new()) };
+}
+
 /// Base frequency multiplier for all `BlendedNoise` coordinate transforms.
 const COORDINATE_SCALE: f64 = 684.412;
 
 /// Runtime `BlendedNoise` sampler with three seeded `PerlinNoise` instances.
 ///
 /// Matches vanilla's `BlendedNoise` density function.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BlendedNoise {
     min_limit_noise: PerlinNoise,
     max_limit_noise: PerlinNoise,
@@ -70,7 +73,6 @@ pub struct BlendedNoise {
     y_factor: f64,
     smear_scale_multiplier: f64,
     max_value: f64,
-    column_cache: SyncMutex<ColumnCache>,
 }
 
 impl BlendedNoise {
@@ -106,7 +108,6 @@ impl BlendedNoise {
             y_factor,
             smear_scale_multiplier,
             max_value,
-            column_cache: SyncMutex::new(ColumnCache::new()),
         }
     }
 
@@ -116,7 +117,8 @@ impl BlendedNoise {
     /// cached result (O(1) lookup). Otherwise computes from scratch.
     #[must_use]
     pub fn compute(&self, block_x: i32, block_y: i32, block_z: i32) -> f64 {
-        if let Some(val) = self.column_cache.lock().lookup(block_x, block_y, block_z) {
+        let cached = COLUMN_CACHE.with(|c| c.borrow().lookup(block_x, block_y, block_z));
+        if let Some(val) = cached {
             return val;
         }
         self.compute_scalar(block_x, block_y, block_z)
@@ -262,30 +264,33 @@ impl BlendedNoise {
         let count = block_ys.len().min(MAX_COLUMN_CACHE);
         let ys = &block_ys[..count];
 
-        // Compute all values before locking (SIMD batches of 4)
-        let mut results = [0.0f64; MAX_COLUMN_CACHE];
-        let full_chunks = count / 4;
-        for chunk in 0..full_chunks {
-            let base = chunk * 4;
-            let batch_ys = [ys[base], ys[base + 1], ys[base + 2], ys[base + 3]];
-            results[base..base + 4].copy_from_slice(&self.compute_4x(block_x, batch_ys, block_z));
-        }
-        for i in (full_chunks * 4)..count {
-            results[i] = self.compute_scalar(block_x, ys[i], block_z);
-        }
+        COLUMN_CACHE.with(|c| {
+            let mut cache = c.borrow_mut();
+            cache.valid = true;
+            cache.block_x = block_x;
+            cache.block_z = block_z;
+            cache.count = count;
+            cache.block_ys[..count].copy_from_slice(ys);
 
-        let mut cache = self.column_cache.lock();
-        cache.valid = true;
-        cache.block_x = block_x;
-        cache.block_z = block_z;
-        cache.count = count;
-        cache.block_ys[..count].copy_from_slice(ys);
-        cache.results[..count].copy_from_slice(&results[..count]);
+            // SIMD batches of 4
+            let full_chunks = count / 4;
+            for chunk in 0..full_chunks {
+                let base = chunk * 4;
+                let batch_ys = [ys[base], ys[base + 1], ys[base + 2], ys[base + 3]];
+                let vals = self.compute_4x(block_x, batch_ys, block_z);
+                cache.results[base..base + 4].copy_from_slice(&vals);
+            }
+
+            // Scalar remainder
+            for i in (full_chunks * 4)..count {
+                cache.results[i] = self.compute_scalar(block_x, ys[i], block_z);
+            }
+        });
     }
 
-    /// Invalidate the column cache.
-    pub fn invalidate_column_cache(&self) {
-        self.column_cache.lock().valid = false;
+    /// Invalidate the thread-local column cache.
+    pub fn invalidate_column_cache() {
+        COLUMN_CACHE.with(|c| c.borrow_mut().valid = false);
     }
 
     /// Maximum possible output value.
@@ -389,7 +394,7 @@ mod tests {
         }
 
         // Invalidate and verify fallback to scalar
-        bn.invalidate_column_cache();
+        BlendedNoise::invalidate_column_cache();
         let uncached = bn.compute(0, block_ys[0], 0);
         assert!(
             (scalar_results[0] - uncached).abs() < 1e-12,
