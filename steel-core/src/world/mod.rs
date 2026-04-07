@@ -39,7 +39,6 @@ use steel_registry::{block_entity_type::BlockEntityTypeRef, vanilla_dimension_ty
 use steel_registry::{
     blocks::BlockRef, vanilla_game_rules::ADVANCE_TIME, vanilla_game_rules::ADVANCE_WEATHER,
 };
-
 use steel_utils::locks::{SyncMutex, SyncRwLock};
 
 /// Controls how a block position is treated during a raytrace traversal.
