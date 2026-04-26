@@ -16,6 +16,8 @@ use steel_utils::random::name_hash::NameHash;
 use steel_utils::random::{PositionalRandom, Random, RandomSource, RandomSplitter};
 use steel_utils::surface::SurfaceNoiseProvider;
 
+use crate::chunk::chunk_access::ChunkAccess;
+
 const CLAY_BAND_LENGTH: usize = 192;
 
 /// Runtime surface system holding noises and clay band data.
@@ -337,7 +339,7 @@ impl SurfaceSystem {
     )]
     pub fn eroded_badlands_extension(
         &self,
-        chunk: &super::chunk_access::ChunkAccess,
+        chunk: &ChunkAccess,
         local_x: usize,
         local_z: usize,
         block_x: i32,
@@ -420,7 +422,7 @@ impl SurfaceSystem {
     )]
     pub fn frozen_ocean_extension(
         &self,
-        chunk: &super::chunk_access::ChunkAccess,
+        chunk: &ChunkAccess,
         biome_id: u16,
         local_x: usize,
         local_z: usize,

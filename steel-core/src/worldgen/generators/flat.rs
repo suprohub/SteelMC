@@ -1,7 +1,8 @@
 use steel_registry::{REGISTRY, RegistryExt};
 use steel_utils::{BlockStateId, Identifier};
 
-use crate::chunk::{chunk_access::ChunkAccess, chunk_generator::ChunkGenerator};
+use crate::chunk::chunk_access::ChunkAccess;
+use crate::worldgen::generator::ChunkGenerator;
 
 /// A chunk generator that generates a flat world.
 ///

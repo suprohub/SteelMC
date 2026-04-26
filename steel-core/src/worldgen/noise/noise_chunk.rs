@@ -1,4 +1,4 @@
-//! NoiseChunk: cell-based terrain density evaluation with trilinear interpolation.
+//! `NoiseChunk`: cell-based terrain density evaluation with trilinear interpolation.
 //!
 //! Matches vanilla's `NoiseChunk` + `NoiseBasedChunkGenerator.doFill()` flow.
 //!
@@ -15,7 +15,7 @@ use std::mem;
 use steel_utils::density::{ColumnCache, DimensionNoises, NoiseSettings};
 use steel_utils::math::lerp;
 
-use crate::chunk::beardifier::Beardifier;
+use crate::worldgen::noise::beardifier::Beardifier;
 
 /// Maximum number of interpolation channels supported.
 /// Overworld uses 8 (1 terrain + 4 noodle caves + 3 vein channels), nether/end use 1.

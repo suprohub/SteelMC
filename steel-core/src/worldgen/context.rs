@@ -7,12 +7,13 @@ use steel_registry::density_functions::{
     end::EndNoises, nether::NetherNoises, overworld::OverworldNoises,
 };
 
-use crate::chunk::{
-    chunk_access::ChunkAccess, chunk_generator::ChunkGenerator,
-    empty_chunk_generator::EmptyChunkGenerator, flat_chunk_generator::FlatChunkGenerator,
-    vanilla_generator::VanillaGenerator,
-};
 use crate::world::World;
+#[expect(
+    unused_imports,
+    reason = "enum_dispatch resolves the trait name through this import"
+)]
+use crate::worldgen::generator::ChunkGenerator;
+use crate::worldgen::generators::{EmptyChunkGenerator, FlatChunkGenerator, VanillaGenerator};
 
 /// Type alias for overworld generator.
 pub type OverworldGenerator = VanillaGenerator<OverworldNoises>;

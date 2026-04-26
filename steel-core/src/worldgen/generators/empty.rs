@@ -1,4 +1,5 @@
-use crate::chunk::{chunk_access::ChunkAccess, chunk_generator::ChunkGenerator};
+use crate::chunk::chunk_access::ChunkAccess;
+use crate::worldgen::generator::ChunkGenerator;
 
 /// A chunk generator that generates an empty world.
 #[derive(Default)]

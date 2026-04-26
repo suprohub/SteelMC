@@ -13,15 +13,15 @@ use steel_utils::random::{
 };
 use steel_utils::surface::SurfaceRuleContext;
 
-use crate::chunk::aquifer::{Aquifer, AquiferResult, preliminary_surface_level};
-use crate::chunk::beardifier::Beardifier;
 use crate::chunk::chunk_access::ChunkAccess;
-use crate::chunk::chunk_generator::ChunkGenerator;
 use crate::chunk::heightmap::HeightmapType;
-use crate::chunk::noise_chunk::NoiseChunk;
-use crate::chunk::ore_veinifier::OreVeinifier;
-use crate::chunk::surface_system::SurfaceSystem;
 use crate::worldgen::BiomeSourceKind;
+use crate::worldgen::generator::ChunkGenerator;
+use crate::worldgen::noise::aquifer::{Aquifer, AquiferResult, preliminary_surface_level};
+use crate::worldgen::noise::beardifier::Beardifier;
+use crate::worldgen::noise::noise_chunk::NoiseChunk;
+use crate::worldgen::noise::ore_veinifier::OreVeinifier;
+use crate::worldgen::surface::SurfaceSystem;
 
 /// A chunk generator for vanilla (normal) world generation.
 ///

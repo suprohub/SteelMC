@@ -1,7 +1,12 @@
 //! This module contains the `ChunkGenerator` trait, which is used to generate chunks.
 
-use crate::chunk::chunk_access::ChunkAccess;
 use enum_dispatch::enum_dispatch;
+
+use crate::chunk::chunk_access::ChunkAccess;
+use crate::worldgen::context::{
+    ChunkGeneratorType, EndGenerator, NetherGenerator, OverworldGenerator,
+};
+use crate::worldgen::generators::{EmptyChunkGenerator, FlatChunkGenerator};
 
 /// A trait for generating chunks.
 #[enum_dispatch]
