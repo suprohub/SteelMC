@@ -349,24 +349,6 @@ pub mod sound_types;
 #[path = "generated/vanilla_packets.rs"]
 pub mod packets;
 
-/// Multi-noise biome parameters for climate-based biome selection.
-#[expect(warnings)]
-#[rustfmt::skip]
-#[path = "generated/vanilla_multi_noise.rs"]
-pub mod multi_noise;
-
-/// Noise parameters for world generation.
-#[expect(warnings)]
-#[rustfmt::skip]
-#[path = "generated/vanilla_noise_parameters.rs"]
-pub mod noise_parameters;
-
-/// Density functions and noise router for terrain generation.
-#[expect(warnings)]
-#[rustfmt::skip]
-#[path = "generated/vanilla_density_functions/mod.rs"]
-pub mod density_functions;
-
 #[allow(warnings)]
 #[rustfmt::skip]
 #[path = "generated/vanilla_world_clocks.rs"]

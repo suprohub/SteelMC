@@ -9,12 +9,12 @@ use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::vanilla_blocks;
 use steel_registry::{REGISTRY, RegistryExt};
 use steel_utils::BlockStateId;
-use steel_utils::density::NoiseParameters;
-use steel_utils::noise::{NormalNoise, PerlinSimplexNoise};
 use steel_utils::random::legacy_random::LegacyRandom;
 use steel_utils::random::name_hash::NameHash;
 use steel_utils::random::{PositionalRandom, Random, RandomSource, RandomSplitter};
-use steel_utils::surface::SurfaceNoiseProvider;
+use steel_worldgen::density::NoiseParameters;
+use steel_worldgen::noise::{NormalNoise, PerlinSimplexNoise};
+use steel_worldgen::surface::SurfaceNoiseProvider;
 
 use crate::chunk::chunk_access::ChunkAccess;
 

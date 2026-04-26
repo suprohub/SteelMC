@@ -10,11 +10,11 @@
 //! `NormalNoise.createLegacyNetherBiome()`. The shift (offset) noise is effectively
 //! zeroed with params `(0, [0.0])`. See `RandomState.java:55-76`.
 
-use steel_registry::density_functions::nether::{self, NetherColumnCache, NetherNoises};
 use steel_utils::climate::{TargetPoint, quantize_coord};
-use steel_utils::noise::{BlendedNoise, NormalNoise};
 use steel_utils::random::RandomSource;
 use steel_utils::random::legacy_random::LegacyRandom;
+use steel_worldgen::density_functions::nether::{self, NetherColumnCache, NetherNoises};
+use steel_worldgen::noise::{BlendedNoise, NormalNoise};
 
 /// Climate sampler for the nether using compiled density functions.
 ///

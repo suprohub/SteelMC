@@ -3,7 +3,7 @@
 use std::sync::{Arc, Weak};
 
 use enum_dispatch::enum_dispatch;
-use steel_registry::density_functions::{
+use steel_worldgen::density_functions::{
     end::EndNoises, nether::NetherNoises, overworld::OverworldNoises,
 };
 

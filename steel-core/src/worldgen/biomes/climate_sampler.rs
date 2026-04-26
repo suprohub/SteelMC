@@ -7,10 +7,10 @@
 //! noise router (`router_temperature`, `router_vegetation`, etc.). Other dimensions
 //! need their own climate samplers with their own transpiled density functions.
 
-use steel_registry::density_functions::overworld::{self, OverworldColumnCache, OverworldNoises};
-use steel_registry::noise_parameters::get_noise_parameters;
 use steel_utils::climate::{TargetPoint, quantize_coord};
 use steel_utils::random::{Random, xoroshiro::Xoroshiro};
+use steel_worldgen::density_functions::overworld::{self, OverworldColumnCache, OverworldNoises};
+use steel_worldgen::noise_parameters::get_noise_parameters;
 
 /// Climate sampler for the overworld using compiled density functions.
 ///

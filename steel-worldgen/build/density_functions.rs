@@ -3,8 +3,11 @@ use quote::quote;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::path::Path;
+use std::string::String;
 use std::sync::Arc;
 use std::{fs, path::PathBuf};
+
+use crate::surface_rules::{SurfaceRuleJson, generate_surface_rule_function};
 
 /// Parsed density function from datapack JSON.
 ///
@@ -210,7 +213,7 @@ pub struct SplinePointJson {
     pub derivative: f32,
 }
 
-/// Parsed noise router from a noise_settings datapack file.
+/// Parsed noise router from a `noise_settings` datapack file.
 #[derive(Deserialize)]
 pub struct NoiseRouterJson {
     barrier: DensityFunctionJson,
@@ -230,7 +233,7 @@ pub struct NoiseRouterJson {
     vein_gap: DensityFunctionJson,
 }
 
-/// Noise configuration from a noise_settings datapack file.
+/// Noise configuration from a `noise_settings` datapack file.
 #[derive(Deserialize)]
 struct NoiseConfigJson {
     min_y: i32,
@@ -239,7 +242,7 @@ struct NoiseConfigJson {
     size_vertical: i32,
 }
 
-/// Block state reference from a noise_settings datapack file.
+/// Block state reference from a `noise_settings` datapack file.
 #[derive(Deserialize)]
 struct BlockStateJson {
     #[serde(rename = "Name")]
@@ -259,12 +262,12 @@ struct NoiseSettingsJson {
     noise: NoiseConfigJson,
     noise_router: NoiseRouterJson,
     #[serde(default)]
-    surface_rule: Option<crate::surface_rules::SurfaceRuleJson>,
+    surface_rule: Option<SurfaceRuleJson>,
 }
 
 // ── Datapack file reading ───────────────────────────────────────────────────
 
-const DATAPACK_BASE: &str = "build_assets/builtin_datapacks/minecraft/worldgen";
+const DATAPACK_BASE: &str = "../steel-registry/build_assets/builtin_datapacks/minecraft/worldgen";
 
 /// Recursively collect all .json files under a directory.
 fn collect_json_files(dir: &Path) -> Vec<PathBuf> {
@@ -282,11 +285,13 @@ fn collect_json_files(dir: &Path) -> Vec<PathBuf> {
     files
 }
 
-/// Convert a density_function file path to a registry ID.
+/// Convert a `density_function` file path to a registry ID.
 ///
 /// e.g. `.../density_function/overworld/continents.json` -> `minecraft:overworld/continents`
 fn path_to_id(path: &Path, base_dir: &Path) -> String {
-    let relative = path.strip_prefix(base_dir).unwrap();
+    let relative = path
+        .strip_prefix(base_dir)
+        .expect("density function path should be under the density function directory");
     let without_ext = relative.with_extension("");
     // Convert OS path separators to forward slashes
     let id_path = without_ext
@@ -327,7 +332,12 @@ fn read_noise_settings(dimension: &str) -> NoiseSettingsJson {
 
 // ── JSON → DensityFunction conversion ───────────────────────────────────────
 
-use steel_utils::density::*;
+use crate::density::{
+    BlendAlpha, BlendDensity, BlendOffset, BlendedNoise, Clamp, Constant, CubicSpline,
+    DensityFunction, FindTopSurface, Mapped, MappedType, Marker, MarkerType, Noise, RangeChoice,
+    RarityValueMapper, Reference, Shift, ShiftA, ShiftB, ShiftedNoise, Spline, SplinePoint,
+    SplineValue, TwoArgType, TwoArgumentSimple, WeirdScaledSampler, YClampedGradient,
+};
 
 /// Convert a JSON density function to a runtime `DensityFunction` value.
 ///
@@ -346,6 +356,10 @@ fn json_to_df(json: &DensityFunctionJson) -> DensityFunction {
     }
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "one match arm per vanilla density function JSON variant is clearer here"
+)]
 fn json_data_to_df(data: &DensityFunctionData) -> DensityFunction {
     match data {
         DensityFunctionData::Constant { value } => {
@@ -516,7 +530,7 @@ fn json_data_to_df(data: &DensityFunctionData) -> DensityFunction {
             upper_bound,
             lower_bound,
             cell_height,
-        } => DensityFunction::FindTopSurface(steel_utils::density::FindTopSurface {
+        } => DensityFunction::FindTopSurface(FindTopSurface {
             density: Arc::new(json_to_df(density)),
             upper_bound: Arc::new(json_to_df(upper_bound)),
             lower_bound: *lower_bound,
@@ -586,7 +600,7 @@ fn json_spline_point(p: &SplinePointJson) -> SplinePoint {
 
 // ── Build entry point ───────────────────────────────────────────────────────
 
-use steel_utils::density::transpiler::{TranspilerInput, transpile};
+use crate::density::{TranspilerInput, transpile};
 
 /// Convert a noise router JSON into a `BTreeMap` of router entries.
 fn router_to_entries(router: &NoiseRouterJson) -> BTreeMap<String, DensityFunction> {
@@ -645,6 +659,10 @@ fn transpile_dimension(
 }
 
 /// Generate noise settings constants and trait impls for a dimension.
+#[expect(
+    clippy::too_many_lines,
+    reason = "generated noise settings include all trait glue in one quoted block"
+)]
 fn generate_noise_settings(dimension: &str, prefix: &str) -> TokenStream {
     let mut settings = read_noise_settings(dimension);
 
@@ -655,19 +673,16 @@ fn generate_noise_settings(dimension: &str, prefix: &str) -> TokenStream {
     // Generate surface rule function and noise IDs
     let (surface_rule_body, surface_noise_ids_tokens) =
         if let Some(rule) = settings.surface_rule.take() {
-            let (func, noise_ids) = crate::surface_rules::generate_surface_rule_function(
-                &rule,
-                settings.noise.min_y,
-                settings.noise.height,
-            );
-            let noise_id_literals: Vec<_> = noise_ids.iter().map(|s| s.as_str()).collect();
+            let (func, noise_ids) =
+                generate_surface_rule_function(&rule, settings.noise.min_y, settings.noise.height);
+            let noise_id_literals: Vec<_> = noise_ids.iter().map(String::as_str).collect();
             (func, quote! { &[#(#noise_id_literals),*] })
         } else {
             let empty_func = quote! {
                 /// No surface rule for this dimension.
                 #[allow(clippy::needless_return)]
                 fn apply_surface_rule_impl(
-                    _ctx: &steel_utils::surface::SurfaceRuleContext<'_>,
+                    _ctx: &steel_worldgen::surface::SurfaceRuleContext<'_>,
                 ) -> Option<steel_utils::BlockStateId> {
                     None
                 }
@@ -731,17 +746,17 @@ fn generate_noise_settings(dimension: &str, prefix: &str) -> TokenStream {
             /// Get the default block state ID for this dimension.
             #[inline]
             pub fn default_block_id() -> steel_utils::BlockStateId {
-                crate::REGISTRY.blocks.get_default_state_id(&crate::vanilla_blocks::#default_block_ident)
+                steel_registry::REGISTRY.blocks.get_default_state_id(&steel_registry::vanilla_blocks::#default_block_ident)
             }
 
             /// Get the default fluid state ID for this dimension.
             #[inline]
             pub fn default_fluid_id() -> steel_utils::BlockStateId {
-                crate::REGISTRY.blocks.get_default_state_id(&crate::vanilla_blocks::#default_fluid_ident)
+                steel_registry::REGISTRY.blocks.get_default_state_id(&steel_registry::vanilla_blocks::#default_fluid_ident)
             }
         }
 
-        impl steel_utils::density::NoiseSettings for #settings_struct {
+        impl steel_worldgen::density::NoiseSettings for #settings_struct {
             const MIN_Y: i32 = #min_y;
             const HEIGHT: i32 = #height;
             const SEA_LEVEL: i32 = #sea_level;
@@ -768,7 +783,7 @@ fn generate_noise_settings(dimension: &str, prefix: &str) -> TokenStream {
             }
         }
 
-        impl steel_utils::density::ColumnCache for #cache_struct {
+        impl steel_worldgen::density::ColumnCache for #cache_struct {
             type Noises = #noises_struct;
 
             #[inline]
@@ -782,14 +797,14 @@ fn generate_noise_settings(dimension: &str, prefix: &str) -> TokenStream {
             }
         }
 
-        impl steel_utils::density::DimensionNoises for #noises_struct {
+        impl steel_worldgen::density::DimensionNoises for #noises_struct {
             type ColumnCache = #cache_struct;
             type Settings = #settings_struct;
 
             fn create(
                 seed: u64,
                 splitter: &steel_utils::random::RandomSplitter,
-                params: &rustc_hash::FxHashMap<String, steel_utils::density::NoiseParameters>,
+                params: &rustc_hash::FxHashMap<String, steel_worldgen::density::NoiseParameters>,
             ) -> Self {
                 #noises_struct::create(seed, splitter, params)
             }
@@ -907,7 +922,7 @@ fn generate_noise_settings(dimension: &str, prefix: &str) -> TokenStream {
             }
 
             fn try_apply_surface_rule(
-                ctx: &steel_utils::surface::SurfaceRuleContext<'_>,
+                ctx: &steel_worldgen::surface::SurfaceRuleContext<'_>,
             ) -> Option<steel_utils::BlockStateId> {
                 Self::apply_surface_rule_impl(ctx)
             }
@@ -953,16 +968,25 @@ pub(crate) fn build() -> DensityFunctionFiles {
 
     // Note: the transpiler already emits `use` imports in #overworld_df / #nether_df / #end_df.
     let overworld = quote! {
+        use steel_registry::RegistryExt;
+        use steel_registry::blocks::block_state_ext::BlockStateExt;
+
         #overworld_df
         #overworld_settings
     };
 
     let nether = quote! {
+        use steel_registry::RegistryExt;
+        use steel_registry::blocks::block_state_ext::BlockStateExt;
+
         #nether_df
         #nether_settings
     };
 
     let end = quote! {
+        use steel_registry::RegistryExt;
+        use steel_registry::blocks::block_state_ext::BlockStateExt;
+
         #end_df
         #end_settings
     };

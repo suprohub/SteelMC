@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 use rustc_hash::FxHashMap;
 
-use crate::noise::NormalNoise;
+type NormalNoise = u8;
 
 // ── Individual density function structs ──────────────────────────────────────
 
@@ -456,7 +456,7 @@ impl DensityFunction {
                 noise_id: n.noise_id.clone(),
                 xz_scale: n.xz_scale,
                 y_scale: n.y_scale,
-                noise: noises.get(&n.noise_id).cloned(),
+                noise: noises.get(&n.noise_id).copied(),
             }),
 
             Self::ShiftedNoise(sn) => Self::ShiftedNoise(ShiftedNoise {
@@ -466,22 +466,22 @@ impl DensityFunction {
                 xz_scale: sn.xz_scale,
                 y_scale: sn.y_scale,
                 noise_id: sn.noise_id.clone(),
-                noise: noises.get(&sn.noise_id).cloned(),
+                noise: noises.get(&sn.noise_id).copied(),
             }),
 
             Self::ShiftA(s) => Self::ShiftA(ShiftA {
                 noise_id: s.noise_id.clone(),
-                noise: noises.get(&s.noise_id).cloned(),
+                noise: noises.get(&s.noise_id).copied(),
             }),
 
             Self::ShiftB(s) => Self::ShiftB(ShiftB {
                 noise_id: s.noise_id.clone(),
-                noise: noises.get(&s.noise_id).cloned(),
+                noise: noises.get(&s.noise_id).copied(),
             }),
 
             Self::Shift(s) => Self::Shift(Shift {
                 noise_id: s.noise_id.clone(),
-                noise: noises.get(&s.noise_id).cloned(),
+                noise: noises.get(&s.noise_id).copied(),
             }),
 
             Self::TwoArgumentSimple(t) => Self::TwoArgumentSimple(TwoArgumentSimple {
@@ -519,14 +519,14 @@ impl DensityFunction {
                 xz_factor: bn.xz_factor,
                 y_factor: bn.y_factor,
                 smear_scale_multiplier: bn.smear_scale_multiplier,
-                noise: noises.get("minecraft:offset").cloned(),
+                noise: noises.get("minecraft:offset").copied(),
             }),
 
             Self::WeirdScaledSampler(ws) => Self::WeirdScaledSampler(WeirdScaledSampler {
                 input: Arc::new(ws.input.resolve_inner(registry, noises)),
                 noise_id: ws.noise_id.clone(),
                 rarity_value_mapper: ws.rarity_value_mapper,
-                noise: noises.get(&ws.noise_id).cloned(),
+                noise: noises.get(&ws.noise_id).copied(),
             }),
 
             Self::BlendDensity(bd) => Self::BlendDensity(BlendDensity {

@@ -77,11 +77,11 @@ pub fn transpile(input: &TranspilerInput) -> TokenStream {
     // Imports are emitted here so each dimension's output is self-contained
     // when wrapped in a module by the caller.
     quote! {
-        use steel_utils::density::spline_eval;
-        use steel_utils::density::RarityValueMapper;
-        use steel_utils::math::{clamp, map_clamped};
-        use steel_utils::noise::NormalNoise;
-        use steel_utils::random::{PositionalRandom, RandomSplitter};
+        use steel_worldgen::density::spline_eval;
+        use steel_worldgen::density::RarityValueMapper;
+        use steel_worldgen::math::{clamp, map_clamped};
+        use steel_worldgen::noise::NormalNoise;
+        use steel_worldgen::random::{PositionalRandom, RandomSplitter};
 
         #noises_struct
         #noises_impl
@@ -392,11 +392,11 @@ impl TranspileContext {
             .collect();
 
         let blended_field = self.blended_noise_config.as_ref().map(|_| {
-            quote! { pub blended_noise: steel_utils::noise::BlendedNoise, }
+            quote! { pub blended_noise: steel_worldgen::noise::BlendedNoise, }
         });
 
         let end_islands_field = if self.uses_end_islands {
-            Some(quote! { pub end_islands: steel_utils::noise::EndIslands, })
+            Some(quote! { pub end_islands: steel_worldgen::noise::EndIslands, })
         } else {
             None
         };
@@ -429,8 +429,8 @@ impl TranspileContext {
                 if legacy && id == "minecraft:temperature" {
                     quote! {
                         #field: {
-                            let mut rng = steel_utils::random::RandomSource::Legacy(
-                                steel_utils::random::legacy_random::LegacyRandom::from_seed(seed)
+                            let mut rng = steel_worldgen::random::RandomSource::Legacy(
+                                steel_worldgen::random::legacy_random::LegacyRandom::from_seed(seed)
                             );
                             NormalNoise::create_legacy_nether_biome(&mut rng, -7, &[1.0, 1.0])
                         }
@@ -438,8 +438,8 @@ impl TranspileContext {
                 } else if legacy && id == "minecraft:vegetation" {
                     quote! {
                         #field: {
-                            let mut rng = steel_utils::random::RandomSource::Legacy(
-                                steel_utils::random::legacy_random::LegacyRandom::from_seed(seed.wrapping_add(1))
+                            let mut rng = steel_worldgen::random::RandomSource::Legacy(
+                                steel_worldgen::random::legacy_random::LegacyRandom::from_seed(seed.wrapping_add(1))
                             );
                             NormalNoise::create_legacy_nether_biome(&mut rng, -7, &[1.0, 1.0])
                         }
@@ -467,10 +467,10 @@ impl TranspileContext {
                 // instead of splitter.fromHashOf("minecraft:terrain").
                 quote! {
                     blended_noise: {
-                        let mut rng = steel_utils::random::RandomSource::Legacy(
-                            steel_utils::random::legacy_random::LegacyRandom::from_seed(seed)
+                        let mut rng = steel_worldgen::random::RandomSource::Legacy(
+                            steel_worldgen::random::legacy_random::LegacyRandom::from_seed(seed)
                         );
-                        steel_utils::noise::BlendedNoise::new(
+                        steel_worldgen::noise::BlendedNoise::new(
                             &mut rng,
                             #xz_scale, #y_scale, #xz_factor, #y_factor, #smear,
                         )
@@ -479,11 +479,11 @@ impl TranspileContext {
             } else {
                 quote! {
                     blended_noise: {
-                        use steel_utils::random::PositionalRandom;
-                        use steel_utils::random::name_hash::NameHash;
+                        use steel_worldgen::random::PositionalRandom;
+                        use steel_worldgen::random::name_hash::NameHash;
                         const TERRAIN_HASH: NameHash = NameHash::new("minecraft:terrain");
                         let mut terrain_random = splitter.with_hash_of(&TERRAIN_HASH);
-                        steel_utils::noise::BlendedNoise::new(
+                        steel_worldgen::noise::BlendedNoise::new(
                             &mut terrain_random,
                             #xz_scale, #y_scale, #xz_factor, #y_factor, #smear,
                         )
@@ -494,7 +494,7 @@ impl TranspileContext {
 
         let end_islands_init = if self.uses_end_islands {
             Some(quote! {
-                end_islands: steel_utils::noise::EndIslands::new(seed),
+                end_islands: steel_worldgen::noise::EndIslands::new(seed),
             })
         } else {
             None
@@ -507,7 +507,7 @@ impl TranspileContext {
                 pub fn create(
                     seed: u64,
                     splitter: &RandomSplitter,
-                    params: &rustc_hash::FxHashMap<String, steel_utils::density::NoiseParameters>,
+                    params: &rustc_hash::FxHashMap<String, steel_worldgen::density::NoiseParameters>,
                 ) -> Self {
                     let _ = seed; // Suppress unused warning when EndIslands is not used
                     Self {

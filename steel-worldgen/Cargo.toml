@@ -1,5 +1,5 @@
 [package]
-name = "steel-registry"
+name = "steel-worldgen"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -8,35 +8,13 @@ build = "build/build.rs"
 
 [dependencies]
 # Internal crates
+steel-registry.workspace = true
 steel-utils.workspace = true
-
-# UUID
-uuid.workspace = true
-
-# Serialization
-serde.workspace = true
-serde_json.workspace = true
 
 # Data structures
-glam.workspace = true
 rustc-hash.workspace = true
 
-# Logging
-log.workspace = true
-# Utils
-rand.workspace = true
-text_components.workspace = true
-# NBT
-simdnbt.workspace = true
-tracing.workspace = true
-
 [build-dependencies]
-# Internal crates
-steel-utils.workspace = true
-
-# UUID
-uuid.workspace = true
-
 # Serialization
 serde.workspace = true
 serde_json.workspace = true
@@ -48,9 +26,5 @@ quote.workspace = true
 # Data structures
 rustc-hash.workspace = true
 
-# Utilities
-heck.workspace = true
-
-[features]
-fmt = []
-minecraft-src = []
+[lints]
+workspace = true

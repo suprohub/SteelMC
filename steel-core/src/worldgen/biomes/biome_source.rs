@@ -17,13 +17,13 @@
 //! alongside the column cache. The only cost is one cold start per chunk (1/1536 lookups).
 
 use steel_registry::biome::BiomeRef;
-use steel_registry::density_functions::nether::NetherColumnCache;
-use steel_registry::density_functions::overworld::OverworldColumnCache;
-use steel_registry::multi_noise::{get_nether_biome_cached, get_overworld_biome_cached};
 use steel_registry::vanilla_biomes;
+use steel_worldgen::density_functions::nether::NetherColumnCache;
+use steel_worldgen::density_functions::overworld::OverworldColumnCache;
+use steel_worldgen::multi_noise::{get_nether_biome_cached, get_overworld_biome_cached};
 
 use super::{NetherClimateSampler, OverworldClimateSampler};
-use steel_utils::noise::EndIslands;
+use steel_worldgen::noise::EndIslands;
 
 /// Dimension-specific biome source.
 ///

@@ -21,5 +21,5 @@ pub use context::{
 };
 pub use generator::ChunkGenerator;
 pub use generators::{EmptyChunkGenerator, FlatChunkGenerator, VanillaGenerator};
-pub use steel_registry::density_functions::overworld::OverworldColumnCache;
-pub use steel_utils::noise::EndIslands;
+pub use steel_worldgen::density_functions::overworld::OverworldColumnCache;
+pub use steel_worldgen::noise::EndIslands;

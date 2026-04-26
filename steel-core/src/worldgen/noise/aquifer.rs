@@ -9,10 +9,10 @@
 
 use steel_registry::{REGISTRY, vanilla_blocks};
 use steel_utils::BlockStateId;
-use steel_utils::density::{ColumnCache, DimensionNoises, NoiseSettings};
-use steel_utils::math::{clamp, map, map_clamped};
 use steel_utils::random::name_hash::NameHash;
 use steel_utils::random::{PositionalRandom, Random, RandomSplitter};
+use steel_worldgen::density::{ColumnCache, DimensionNoises, NoiseSettings};
+use steel_worldgen::math::{clamp, map, map_clamped};
 
 // Grid spacing
 const Y_SPACING: i32 = 12;

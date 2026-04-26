@@ -7,8 +7,8 @@
 
 use std::sync::LazyLock;
 
-use steel_utils::math::map_clamped;
 use steel_utils::{BoundingBox, Identifier};
+use steel_worldgen::math::map_clamped;
 
 use crate::world::structure::StructureStartMap;
 

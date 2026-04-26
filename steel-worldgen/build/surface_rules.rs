@@ -111,7 +111,7 @@ pub enum VerticalAnchorJson {
 
 /// Context for surface rule transpilation.
 pub struct SurfaceRuleTranspiler {
-    /// Collected noise IDs referenced by NoiseThreshold conditions.
+    /// Collected noise IDs referenced by `NoiseThreshold` conditions.
     pub noise_ids: Vec<String>,
     /// Min Y for this dimension.
     min_y: i32,
@@ -120,7 +120,7 @@ pub struct SurfaceRuleTranspiler {
 }
 
 impl SurfaceRuleTranspiler {
-    pub fn new(min_y: i32, height: i32) -> Self {
+    pub const fn new(min_y: i32, height: i32) -> Self {
         Self {
             noise_ids: Vec::new(),
             min_y,
@@ -130,7 +130,7 @@ impl SurfaceRuleTranspiler {
 
     /// Transpile a surface rule tree into a Rust function body.
     ///
-    /// Generated code references `ctx: &SurfaceRuleContext` from steel_utils.
+    /// Generated code references `ctx: &SurfaceRuleContext` from `steel_utils`.
     pub fn transpile_rule(&mut self, rule: &SurfaceRuleJson) -> TokenStream {
         match rule {
             SurfaceRuleJson::Block { result_state } => {
@@ -140,7 +140,7 @@ impl SurfaceRuleTranspiler {
                     .unwrap_or(&result_state.name);
                 let ident = Ident::new(&block_name.to_uppercase(), Span::call_site());
                 quote! {
-                    return Some(crate::vanilla_blocks::#ident.default_state());
+                    return Some(steel_registry::vanilla_blocks::#ident.default_state());
                 }
             }
             SurfaceRuleJson::Sequence { sequence } => {
@@ -165,6 +165,10 @@ impl SurfaceRuleTranspiler {
     }
 
     /// Transpile a condition into a boolean expression.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "surface condition variants are best kept in one dispatch function"
+    )]
     fn transpile_condition(&mut self, cond: &SurfaceConditionJson) -> TokenStream {
         match cond {
             SurfaceConditionJson::StoneDepth {
@@ -216,11 +220,14 @@ impl SurfaceRuleTranspiler {
                             .unwrap_or(b.as_str());
                         let upper = biome_name.to_uppercase();
                         let biome_ident = Ident::new(&upper, Span::call_site());
-                        quote! { ctx.biome_id == crate::RegistryEntry::id(&*crate::vanilla_biomes::#biome_ident) as u16 }
+                        quote! { ctx.biome_id == steel_registry::RegistryEntry::id(&*steel_registry::vanilla_biomes::#biome_ident) as u16 }
                     })
                     .collect();
                 if checks.len() == 1 {
-                    checks.into_iter().next().unwrap()
+                    checks
+                        .into_iter()
+                        .next()
+                        .expect("single biome condition should have one generated check")
                 } else {
                     quote! { ( #(#checks)||* ) }
                 }
@@ -345,7 +352,7 @@ pub fn generate_surface_rule_function(
         /// Apply this dimension's surface rule at the current context position.
         #[allow(clippy::collapsible_if, clippy::needless_return, clippy::erasing_op, unused_comparisons)]
         fn apply_surface_rule_impl(
-            ctx: &steel_utils::surface::SurfaceRuleContext<'_>,
+            ctx: &steel_worldgen::surface::SurfaceRuleContext<'_>,
         ) -> Option<steel_utils::BlockStateId> {
             #body
             None

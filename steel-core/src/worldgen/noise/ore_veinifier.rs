@@ -6,10 +6,10 @@
 
 use steel_registry::{REGISTRY, vanilla_blocks};
 use steel_utils::BlockStateId;
-use steel_utils::density::{ColumnCache, DimensionNoises};
-use steel_utils::math::map_clamped;
 use steel_utils::random::name_hash::NameHash;
 use steel_utils::random::{PositionalRandom, Random, RandomSplitter};
+use steel_worldgen::density::{ColumnCache, DimensionNoises};
+use steel_worldgen::math::map_clamped;
 
 /// Veininess magnitude must exceed this (after edge roundoff) to place any vein block.
 const VEININESS_THRESHOLD: f64 = 0.4;

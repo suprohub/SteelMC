@@ -26,10 +26,14 @@ struct BiomeParameters {
 
 /// Generate the Rust code for multi-noise biome parameter lists (all presets).
 pub(crate) fn build() -> TokenStream {
-    println!("cargo:rerun-if-changed=build_assets/multi_noise_biome_source_parameters.json");
+    println!(
+        "cargo:rerun-if-changed=../steel-registry/build_assets/multi_noise_biome_source_parameters.json"
+    );
 
-    let content = fs::read_to_string("build_assets/multi_noise_biome_source_parameters.json")
-        .expect("Failed to read multi_noise_biome_source_parameters.json");
+    let content = fs::read_to_string(
+        "../steel-registry/build_assets/multi_noise_biome_source_parameters.json",
+    )
+    .expect("Failed to read multi_noise_biome_source_parameters.json");
     let presets: BTreeMap<String, Vec<BiomeEntry>> =
         serde_json::from_str(&content).expect("Failed to parse multi-noise biome parameters JSON");
 
@@ -38,11 +42,11 @@ pub(crate) fn build() -> TokenStream {
     stream.extend(quote! {
         //! Generated multi-noise biome source parameters for all presets.
         //!
-        //! Auto-generated from build_assets/multi_noise_biome_source_parameters.json.
+        //! Auto-generated from steel-registry/build_assets/multi_noise_biome_source_parameters.json.
         //! Do not edit manually.
 
-        use crate::biome::BiomeRef;
-        use crate::vanilla_biomes;
+        use steel_registry::biome::BiomeRef;
+        use steel_registry::vanilla_biomes;
         use steel_utils::climate::{Parameter, ParameterList, ParameterPoint};
         use std::sync::LazyLock;
     });
@@ -64,10 +68,9 @@ pub(crate) fn build() -> TokenStream {
             "{} biome parameter list for multi-noise biome selection.",
             capitalize(short_name)
         );
-        let doc_get = format!("Get the biome for a target point in the {}.", short_name);
+        let doc_get = format!("Get the biome for a target point in the {short_name}.");
         let doc_cached = format!(
-            "Get the biome with lastResult caching for the {} (matches vanilla's ThreadLocal warm-start).",
-            short_name
+            "Get the biome with lastResult caching for the {short_name} (matches vanilla's ThreadLocal warm-start)."
         );
 
         stream.extend(quote! {
@@ -104,7 +107,7 @@ fn quantize(v: f64) -> i64 {
     ((v as f32) * 10000.0f32) as i64
 }
 
-/// Convert a biome name like `"minecraft:plains"` to the vanilla_biomes constant
+/// Convert a biome name like `"minecraft:plains"` to the `vanilla_biomes` constant
 /// identifier `PLAINS`.
 fn biome_ident(name: &str) -> Ident {
     let path = name.strip_prefix("minecraft:").unwrap_or(name);

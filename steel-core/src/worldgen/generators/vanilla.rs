@@ -3,15 +3,15 @@ use std::marker::PhantomData;
 use sha2::{Digest, Sha256};
 use steel_registry::RegistryEntry;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
-use steel_registry::noise_parameters::get_noise_parameters;
 use steel_registry::vanilla_biomes;
 use steel_utils::BlockStateId;
-use steel_utils::density::{ColumnCache, DimensionNoises, NoiseSettings};
-use steel_utils::math::noise_math::lerp2;
 use steel_utils::random::{
     Random, RandomSplitter, legacy_random::LegacyRandom, xoroshiro::Xoroshiro,
 };
-use steel_utils::surface::SurfaceRuleContext;
+use steel_worldgen::density::{ColumnCache, DimensionNoises, NoiseSettings};
+use steel_worldgen::math::lerp2;
+use steel_worldgen::noise_parameters::get_noise_parameters;
+use steel_worldgen::surface::SurfaceRuleContext;
 
 use crate::chunk::chunk_access::ChunkAccess;
 use crate::chunk::heightmap::HeightmapType;
