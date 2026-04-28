@@ -3,6 +3,7 @@
 /steel-registry/src/generated
 /steel-utils/src/generated
 /steel-core/src/behavior/generated
+/steel-worldgen/src/generated
 
 # Config
 /config
